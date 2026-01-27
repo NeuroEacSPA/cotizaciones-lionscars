@@ -1139,24 +1139,24 @@ const App = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="min-h-screen bg-[#0a0a0a] print:bg-white pb-20"
+              className="min-h-screen bg-[#0a0a0a] print:bg-white pb-20 overflow-x-hidden" // Added overflow-x-hidden to prevent body scroll
             >
-              {/* Floating Command Bar */}
-              <div className="fixed top-6 left-1/2 -translate-x-1/2 z-40 bg-black/90 backdrop-blur-2xl border border-white/10 p-2 rounded-2xl flex items-center gap-2 shadow-2xl print:hidden">
-                <button onClick={() => setVista('dashboard')} className="p-3 hover:bg-white/10 rounded-xl text-neutral-400 hover:text-white transition-colors">
+              {/* Floating Command Bar - Responsive Adjustments */}
+              <div className="fixed top-4 md:top-6 left-1/2 -translate-x-1/2 z-40 bg-black/90 backdrop-blur-2xl border border-white/10 p-2 rounded-2xl flex items-center justify-between gap-2 shadow-2xl print:hidden w-[95%] md:w-auto overflow-x-auto">
+                <button onClick={() => setVista('dashboard')} className="p-3 hover:bg-white/10 rounded-xl text-neutral-400 hover:text-white transition-colors shrink-0">
                   <ArrowLeft size={20} />
                 </button>
 
-                <div className="w-px h-8 bg-white/10 mx-2" />
+                <div className="w-px h-8 bg-white/10 mx-2 shrink-0" />
 
-                <button onClick={guardar} disabled={loadingData} className="flex items-center gap-2 px-6 py-3 bg-white text-black rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-neutral-200 transition-colors disabled:opacity-50">
+                <button onClick={guardar} disabled={loadingData} className="flex items-center gap-2 px-4 md:px-6 py-3 bg-white text-black rounded-xl font-bold text-[10px] md:text-xs uppercase tracking-widest hover:bg-neutral-200 transition-colors disabled:opacity-50 shrink-0 whitespace-nowrap">
                   {loadingData ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
                   {idFirebase ? 'ACTUALIZAR' : 'GUARDAR'}
                 </button>
 
                 <AnimatePresence>
                   {!idFirebase && autoSaved && (
-                    <motion.div initial={{ width: 0, opacity: 0 }} animate={{ width: 'auto', opacity: 1 }} exit={{ width: 0, opacity: 0 }} className="overflow-hidden">
+                    <motion.div initial={{ width: 0, opacity: 0 }} animate={{ width: 'auto', opacity: 1 }} exit={{ width: 0, opacity: 0 }} className="overflow-hidden hidden sm:block">
                       <div className="flex items-center gap-1 text-green-500 text-[10px] font-bold px-3 uppercase tracking-wider whitespace-nowrap">
                         <CheckCircle2 size={12} /> Guardado Local
                       </div>
@@ -1164,14 +1164,14 @@ const App = () => {
                   )}
                 </AnimatePresence>
 
-                <div className="w-px h-8 bg-white/10 mx-2" />
+                <div className="w-px h-8 bg-white/10 mx-2 shrink-0" />
 
-                <button onClick={() => window.print()} className="p-3 hover:bg-white/10 rounded-xl text-neutral-400 hover:text-white transition-colors">
+                <button onClick={() => window.print()} className="p-3 hover:bg-white/10 rounded-xl text-neutral-400 hover:text-white transition-colors shrink-0">
                   <Printer size={20} />
                 </button>
 
                 {idFirebase && (
-                  <button onClick={() => eliminar(idFirebase!)} className="p-3 hover:bg-red-900/20 rounded-xl text-neutral-400 hover:text-red-500 transition-colors">
+                  <button onClick={() => eliminar(idFirebase!)} className="p-3 hover:bg-red-900/20 rounded-xl text-neutral-400 hover:text-red-500 transition-colors shrink-0">
                     <Trash2 size={20} />
                   </button>
                 )}
@@ -1179,34 +1179,34 @@ const App = () => {
 
               <div className="h-24 print:hidden"></div>
 
-              {/* DOCUMENTO COMPLETO */}
-              <div className="max-w-[21cm] mx-auto bg-neutral-900 min-h-[29.7cm] shadow-2xl print:shadow-none relative text-white print:bg-white print:text-black">
+              {/* DOCUMENTO COMPLETO - Responsive Wrapper */}
+              <div className="w-full md:max-w-[21cm] mx-auto bg-neutral-900 min-h-[29.7cm] shadow-2xl print:shadow-none relative text-white print:bg-white print:text-black transition-all">
 
-                {/* Header Premium */}
-                <div className="px-8 py-8 print:px-6 print:py-6 border-b-2 border-red-600 print:border-black flex justify-between items-start relative overflow-hidden">
+                {/* Header Premium - Stacked on mobile */}
+                <div className="px-4 py-6 md:px-8 md:py-8 print:px-6 print:py-6 border-b-2 border-red-600 print:border-black flex flex-col md:flex-row justify-between items-center md:items-start relative overflow-hidden gap-6 md:gap-0">
                   <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-red-600/10 rounded-full blur-[80px] pointer-events-none print:hidden"></div>
 
-                  <div className="flex flex-col gap-4 relative z-10">
+                  <div className="flex flex-col gap-4 relative z-10 w-full md:w-auto items-center md:items-start text-center md:text-left">
                     <div className="w-48 bg-black/50 p-3 rounded-xl border border-white/10 print:bg-transparent print:border-none">
                       <div className="w-full h-16 bg-neutral-800 rounded flex items-center justify-center print:bg-transparent">
                         <span className="text-xs font-bold text-white print:text-black">{empresa.nombre}</span>
                       </div>
                     </div>
-                    <div className="text-[10px] text-neutral-400 font-medium space-y-1 ml-1 print:text-neutral-600">
+                    <div className="text-[10px] text-neutral-400 font-medium space-y-1 ml-1 print:text-neutral-600 flex flex-col items-center md:items-start">
                       <p className="flex items-center gap-2"><Building2 size={10} className="text-red-600 print:text-black" /> {empresa.direccion}</p>
                       <p className="flex items-center gap-2"><Hash size={10} className="text-red-600 print:text-black" /> RUT: {empresa.rut}</p>
                       <p className="flex items-center gap-2"><Zap size={10} className="text-red-600 print:text-black" /> {empresa.web}</p>
                     </div>
                   </div>
 
-                  <div className="text-right relative z-10">
-                    <h1 className="text-4xl font-black text-white tracking-tighter print:text-black">COTIZACIÓN</h1>
+                  <div className="text-center md:text-right relative z-10 w-full md:w-auto">
+                    <h1 className="text-3xl md:text-4xl font-black text-white tracking-tighter print:text-black">COTIZACIÓN</h1>
                     <p className="text-xs font-bold text-red-600 print:text-black uppercase tracking-[0.3em] mb-4">
                       {empresa.nombre.toUpperCase()}
                     </p>
 
-                    <div className="inline-flex flex-col items-end gap-2 bg-neutral-800/50 print:bg-transparent p-4 rounded-lg border border-white/10 print:border print:border-neutral-300">
-                      <div className="flex items-center justify-end gap-3">
+                    <div className="inline-flex flex-col items-center md:items-end gap-2 bg-neutral-800/50 print:bg-transparent p-4 rounded-lg border border-white/10 print:border print:border-neutral-300 w-full md:w-auto">
+                      <div className="flex items-center justify-between md:justify-end gap-3 w-full">
                         <span className="text-[10px] font-bold text-neutral-400 print:text-neutral-600 uppercase tracking-wider">N°</span>
                         <input
                           value={numeroCotizacion}
@@ -1214,7 +1214,7 @@ const App = () => {
                           className="text-right text-xl font-black text-red-500 print:text-black w-32 border-none bg-transparent p-0 focus:ring-0"
                         />
                       </div>
-                      <div className="flex items-center justify-end gap-3">
+                      <div className="flex items-center justify-between md:justify-end gap-3 w-full">
                         <span className="text-[10px] font-bold text-neutral-400 print:text-neutral-600 uppercase tracking-wider">Fecha</span>
                         <input
                           type="date"
@@ -1223,7 +1223,7 @@ const App = () => {
                           className="text-right text-sm font-bold text-neutral-300 print:text-black border-none bg-transparent p-0 focus:ring-0 [color-scheme:dark] print:[color-scheme:light]"
                         />
                       </div>
-                      <div className="flex items-center justify-end gap-3 print:hidden">
+                      <div className="flex items-center justify-between md:justify-end gap-3 print:hidden w-full">
                         <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Estado</span>
                         <select
                           value={estadoCotizacion}
@@ -1242,9 +1242,9 @@ const App = () => {
                 </div>
 
                 {/* Body */}
-                <div className="p-8 print:p-6">
-                  {/* Tarjetas de Datos - OPTIMIZADO PARA IMPRESIÓN */}
-                  <div className="grid grid-cols-2 gap-6 mb-8">
+                <div className="p-4 md:p-8 print:p-6">
+                  {/* Tarjetas de Datos - Stacked on Mobile */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
 
                     {/* === CLIENTE === */}
                     <div className="bg-neutral-800/50 p-5 rounded-xl border border-white/5 print:bg-transparent print:border print:border-neutral-200">
@@ -1318,46 +1318,45 @@ const App = () => {
                           />
                         </div>
 
-                        {/* Año y Patente - CON BOTÓN AJUSTADO */}
-<div className="grid grid-cols-2 gap-3">
-    <div>
-        <label className="text-[9px] font-bold text-neutral-500 print:text-neutral-600 uppercase block mb-1">
-          Año
-        </label>
-        <input
-          value={anioVehiculo}
-          onChange={e => setAnioVehiculo(e.target.value)}
-          className="w-full bg-neutral-900 print:bg-white border border-neutral-700 print:border-neutral-300 rounded px-3 py-2 text-sm font-medium text-neutral-300 print:text-black focus:border-red-600 focus:ring-0"
-          placeholder="2024"
-        />
-    </div>
+                        {/* Año y Patente */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="text-[9px] font-bold text-neutral-500 print:text-neutral-600 uppercase block mb-1">
+                              Año
+                            </label>
+                            <input
+                              value={anioVehiculo}
+                              onChange={e => setAnioVehiculo(e.target.value)}
+                              className="w-full bg-neutral-900 print:bg-white border border-neutral-700 print:border-neutral-300 rounded px-3 py-2 text-sm font-medium text-neutral-300 print:text-black focus:border-red-600 focus:ring-0"
+                              placeholder="2024"
+                            />
+                          </div>
 
-    <div>
-        <label className="text-[9px] font-bold text-neutral-500 print:text-neutral-600 uppercase block mb-1">
-          Patente *
-        </label>
-        <div className="flex gap-1.5">
-            <input
-              value={patente}
-              onChange={e => setPatente(e.target.value.toUpperCase())}
-              className="w-full bg-neutral-900 print:bg-white border border-neutral-700 print:border-neutral-300 rounded px-3 py-2 text-sm font-black text-white print:text-black focus:border-red-600 focus:ring-0 uppercase tracking-wider text-center"
-              placeholder="XXXX-00"
-              required
-              style={{ minWidth: '0' }}
-            />
-            <a
-              href="https://www.patentechile.com/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-neutral-800 print:hidden w-9 h-9 rounded flex items-center justify-center text-neutral-500 hover:text-red-600 border border-neutral-700 shrink-0 flex-shrink-0"
-              title="Buscar"
-            >
-              <Search size={14} />
-            </a>
-        </div>
-    </div>
-</div>
-
+                          <div>
+                            <label className="text-[9px] font-bold text-neutral-500 print:text-neutral-600 uppercase block mb-1">
+                              Patente *
+                            </label>
+                            <div className="flex gap-1.5">
+                              <input
+                                value={patente}
+                                onChange={e => setPatente(e.target.value.toUpperCase())}
+                                className="w-full bg-neutral-900 print:bg-white border border-neutral-700 print:border-neutral-300 rounded px-3 py-2 text-sm font-black text-white print:text-black focus:border-red-600 focus:ring-0 uppercase tracking-wider text-center"
+                                placeholder="XXXX-00"
+                                required
+                                style={{ minWidth: '0' }}
+                              />
+                              <a
+                                href="https://www.patentechile.com/"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="bg-neutral-800 print:hidden w-9 h-9 rounded flex items-center justify-center text-neutral-500 hover:text-red-600 border border-neutral-700 shrink-0 flex-shrink-0"
+                                title="Buscar"
+                              >
+                                <Search size={14} />
+                              </a>
+                            </div>
+                          </div>
+                        </div>
 
                         {/* Tipo */}
                         <div>
@@ -1381,86 +1380,88 @@ const App = () => {
                     </div>
                   </div>
 
-                  {/* Tabla de Items */}
-                  <table className="w-full mb-8">
-                    <div className="print:text-xs"></div>
-                    <thead>
-                      <tr className="border-b-2 border-neutral-800 print:border-black">
-                        <th className="py-3 text-left text-[10px] font-black uppercase text-neutral-500 print:text-black tracking-widest w-[40%]">
-                          Descripción del Servicio
-                        </th>
-                        <th className="py-3 text-center text-[10px] font-black uppercase text-neutral-500 print:text-black tracking-widest w-[15%]">
-                          Categoría
-                        </th>
-                        <th className="py-3 text-center text-[10px] font-black uppercase text-neutral-500 print:text-black tracking-widest w-[15%]">
-                          Precio Unit.
-                        </th>
-                        <th className="py-3 text-center text-[10px] font-black uppercase text-neutral-500 print:text-black tracking-widest w-[10%]">
-                          Cant.
-                        </th>
-                        <th className="py-3 text-right text-[10px] font-black uppercase text-neutral-500 print:text-black tracking-widest w-[15%]">
-                          Subtotal
-                        </th>
-                        <th className="w-10 print:hidden"></th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-neutral-800 print:divide-neutral-200">
-                      {items.map((item, index) => (
-                        <tr key={item.id} className="group hover:bg-neutral-800/30 print:hover:bg-transparent transition-colors">
-                          <td className="py-3">
-                            <input
-                              value={item.descripcion}
-                              onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, descripcion: e.target.value } : i))}
-                              className="w-full font-medium text-sm border-none p-2 focus:ring-0 bg-transparent text-white print:text-black"
-                              placeholder="Describe el servicio realizado..."
-                            />
-                          </td>
-                          <td className="py-3">
-                            <select
-                              value={item.categoria}
-                              onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, categoria: e.target.value as ItemCotizacion['categoria'] } : i))}
-                              className="w-full text-xs text-center border-none p-2 focus:ring-0 bg-neutral-900 print:bg-neutral-100 rounded text-neutral-300 print:text-black"
-                            >
-                              <option value="mecanica">Mecánica</option>
-                              <option value="desabolladura">Desabolladura</option>
-                              <option value="pintura">Pintura</option>
-                              <option value="repuestos">Repuestos</option>
-                              <option value="otros">Otros</option>
-                            </select>
-                          </td>
-                          <td className="py-3">
-                            <input
-                              type="number"
-                              value={item.precio}
-                              onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, precio: Number(e.target.value) } : i))}
-                              className="w-full font-mono text-sm text-center border-none p-2 focus:ring-0 bg-neutral-900 print:bg-neutral-100 rounded text-neutral-300 print:text-black"
-                            />
-                          </td>
-                          <td className="py-3">
-                            <input
-                              type="number"
-                              min="1"
-                              value={item.cantidad}
-                              onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, cantidad: Number(e.target.value) } : i))}
-                              className="w-full font-mono text-sm text-center border-none p-2 focus:ring-0 bg-transparent text-neutral-300 print:text-black"
-                            />
-                          </td>
-                          <td className="py-3 text-right font-bold font-mono text-sm text-white print:text-black pr-2">
-                            {fmt(item.precio * item.cantidad)}
-                          </td>
-                          <td className="print:hidden text-center">
-                            <button
-                              onClick={() => setItems(p => p.filter(i => i.id !== item.id))}
-                              disabled={items.length === 1}
-                              className="text-neutral-600 hover:text-red-500 transition-colors p-2 disabled:opacity-30 disabled:cursor-not-allowed"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </td>
+                  {/* Tabla de Items - Responsive Scrolling Wrapper */}
+                  <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+                    <table className="w-full mb-8 min-w-[600px] md:min-w-0">
+                      <div className="print:text-xs"></div>
+                      <thead>
+                        <tr className="border-b-2 border-neutral-800 print:border-black">
+                          <th className="py-3 text-left text-[10px] font-black uppercase text-neutral-500 print:text-black tracking-widest w-[40%]">
+                            Descripción del Servicio
+                          </th>
+                          <th className="py-3 text-center text-[10px] font-black uppercase text-neutral-500 print:text-black tracking-widest w-[15%]">
+                            Categoría
+                          </th>
+                          <th className="py-3 text-center text-[10px] font-black uppercase text-neutral-500 print:text-black tracking-widest w-[15%]">
+                            Precio Unit.
+                          </th>
+                          <th className="py-3 text-center text-[10px] font-black uppercase text-neutral-500 print:text-black tracking-widest w-[10%]">
+                            Cant.
+                          </th>
+                          <th className="py-3 text-right text-[10px] font-black uppercase text-neutral-500 print:text-black tracking-widest w-[15%]">
+                            Subtotal
+                          </th>
+                          <th className="w-10 print:hidden"></th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-800 print:divide-neutral-200">
+                        {items.map((item, index) => (
+                          <tr key={item.id} className="group hover:bg-neutral-800/30 print:hover:bg-transparent transition-colors">
+                            <td className="py-3">
+                              <input
+                                value={item.descripcion}
+                                onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, descripcion: e.target.value } : i))}
+                                className="w-full font-medium text-sm border-none p-2 focus:ring-0 bg-transparent text-white print:text-black"
+                                placeholder="Describe el servicio realizado..."
+                              />
+                            </td>
+                            <td className="py-3">
+                              <select
+                                value={item.categoria}
+                                onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, categoria: e.target.value as ItemCotizacion['categoria'] } : i))}
+                                className="w-full text-xs text-center border-none p-2 focus:ring-0 bg-neutral-900 print:bg-neutral-100 rounded text-neutral-300 print:text-black"
+                              >
+                                <option value="mecanica">Mecánica</option>
+                                <option value="desabolladura">Desabolladura</option>
+                                <option value="pintura">Pintura</option>
+                                <option value="repuestos">Repuestos</option>
+                                <option value="otros">Otros</option>
+                              </select>
+                            </td>
+                            <td className="py-3">
+                              <input
+                                type="number"
+                                value={item.precio}
+                                onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, precio: Number(e.target.value) } : i))}
+                                className="w-full font-mono text-sm text-center border-none p-2 focus:ring-0 bg-neutral-900 print:bg-neutral-100 rounded text-neutral-300 print:text-black"
+                              />
+                            </td>
+                            <td className="py-3">
+                              <input
+                                type="number"
+                                min="1"
+                                value={item.cantidad}
+                                onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, cantidad: Number(e.target.value) } : i))}
+                                className="w-full font-mono text-sm text-center border-none p-2 focus:ring-0 bg-transparent text-neutral-300 print:text-black"
+                              />
+                            </td>
+                            <td className="py-3 text-right font-bold font-mono text-sm text-white print:text-black pr-2">
+                              {fmt(item.precio * item.cantidad)}
+                            </td>
+                            <td className="print:hidden text-center">
+                              <button
+                                onClick={() => setItems(p => p.filter(i => i.id !== item.id))}
+                                disabled={items.length === 1}
+                                className="text-neutral-600 hover:text-red-500 transition-colors p-2 disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
 
                   <button
                     onClick={() => setItems([...items, { id: crypto.randomUUID(), descripcion: '', precio: 0, cantidad: 1, categoria: 'mecanica' }])}
@@ -1469,9 +1470,9 @@ const App = () => {
                     <Plus size={14} /> Agregar Servicio
                   </button>
 
-                  {/* Footer con Totales */}
-                  <div className="flex items-start justify-between border-t border-neutral-800 print:border-neutral-200 pt-8 gap-8">
-                    <div className="w-1/2">
+                  {/* Footer con Totales - Stacked on mobile */}
+                  <div className="flex flex-col md:flex-row items-start justify-between border-t border-neutral-800 print:border-neutral-200 pt-8 gap-8">
+                    <div className="w-full md:w-1/2">
                       <p className="text-[10px] font-black text-neutral-500 print:text-neutral-600 uppercase tracking-widest mb-3 flex items-center gap-2">
                         <FileText size={12} className="text-red-600 print:text-black" /> Notas y Observaciones
                       </p>
@@ -1483,7 +1484,7 @@ const App = () => {
                       />
                     </div>
 
-                    <div className="w-1/3 space-y-4">
+                    <div className="w-full md:w-1/3 space-y-4">
                       <div className="space-y-3 bg-neutral-800/50 print:bg-transparent p-6 rounded-xl border border-white/5 print:border print:border-neutral-200">
                         <div className="flex justify-between text-sm text-neutral-400 print:text-neutral-600">
                           <span className="font-medium">Subtotal (Neto)</span>
