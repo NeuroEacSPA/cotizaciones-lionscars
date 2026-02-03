@@ -1405,7 +1405,7 @@ const App = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-neutral-800 print:divide-neutral-200">
-                        {items.map((item, index) => (
+                        {items.map((item) => (
                           <tr key={item.id} className="group hover:bg-neutral-800/30 print:hover:bg-transparent transition-colors">
                             <td className="py-3">
                               <input
