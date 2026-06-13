@@ -1,13 +1,16 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import {
-  Plus, Trash2, Printer, FileText, Building2, Car, Search,
-  Save, History, ArrowLeft, Loader2, LogOut, Lock,
-  TrendingUp, Zap, Hash, CheckCircle2, X, Edit2, Eye,
-  Users, DollarSign, Calendar, BarChart3, PieChart, Activity,
-  Wrench, Palette, Settings, Filter, Download,
-  AlertCircle, Package, Clock,
+  Plus, Trash2, FileText, Car, Search,
+  Save, ArrowLeft, Loader2, LogOut, Lock,
+  TrendingUp, CheckCircle2, X, Edit2, Eye,
+  Users, DollarSign, BarChart3, PieChart, Activity,
+   Download, AlertCircle, Package, 
+  Cpu, Terminal, Zap,  Menu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { Variants } from 'framer-motion';
+import { FileDown } from "lucide-react";
 
 // --- FIREBASE IMPORTS ---
 import { initializeApp } from 'firebase/app';
@@ -20,6 +23,45 @@ import {
   getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
 } from 'firebase/auth';
 import type { User } from 'firebase/auth';
+
+// --- TYPES ---
+interface ItemCotizacion {
+  id: string;
+  descripcion: string;
+  precio: number;
+  cantidad: number;
+  categoria: string;
+}
+
+interface CotizacionData {
+  id_firebase?: string;
+  cliente: string;
+  rutCliente: string;
+  emailCliente?: string;
+  telefonoCliente?: string;
+  vehiculo: string;
+  anioVehiculo: string;
+  patente: string;
+  tipoVehiculo: string;
+  fecha: string;
+  numeroCotizacion: string;
+  items: ItemCotizacion[];
+  notas: string;
+  totalFinal: number;
+  estado: string;
+  fechaCreacion?: any;
+  ultimaModificacion?: any;
+}
+
+interface ClienteData {
+  id_firebase?: string;
+  nombre?: string;
+  rut?: string;
+  email?: string;
+  telefono?: string;
+  direccion?: string;
+  fechaRegistro?: any;
+}
 
 // --- FIREBASE CONFIG ---
 const firebaseConfig = {
@@ -36,70 +78,34 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-// --- TYPES ---
-interface ItemCotizacion {
-  id: string;
-  descripcion: string;
-  precio: number;
-  cantidad: number;
-  categoria?: 'mecanica' | 'desabolladura' | 'pintura' | 'repuestos' | 'otros';
-}
+// --- ANIMATION VARIANTS ---
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.08 } }
+};
 
-interface CotizacionData {
-  id_firebase?: string;
-  cliente: string;
-  rutCliente: string;
-  emailCliente?: string;
-  telefonoCliente?: string;
-  vehiculo: string;
-  anioVehiculo: string;
-  patente: string;
-  tipoVehiculo?: 'auto' | 'camioneta' | 'suv' | 'moto' | 'camion' | 'otro';
-  fecha: string;
-  numeroCotizacion: string;
-  items: ItemCotizacion[];
-  notas: string;
-  totalFinal: number;
-  estado?: 'pendiente' | 'aprobada' | 'rechazada' | 'en_proceso' | 'completada';
-  fechaCreacion?: any;
-  ultimaModificacion?: any;
-}
-
-interface ClienteData {
-  id_firebase?: string;
-  nombre: string;
-  rut: string;
-  email?: string;
-  telefono?: string;
-  direccion?: string;
-  totalGastado?: number;
-  numeroCotizaciones?: number;
-  fechaRegistro?: any;
-}
-
-interface StatsData {
-  totalVentas: number;
-  totalCotizaciones: number;
-  totalClientes: number;
-  ventasMes: number;
-  cotizacionesMes: number;
-  clientesNuevosMes: number;
-  serviciosMasVendidos: Array<{ categoria: string; cantidad: number; total: number }>;
-  vehiculosMasAtendidos: Array<{ tipo: string; cantidad: number }>;
-  estadoCotizaciones: Array<{ estado: string; cantidad: number }>;
-}
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+};
 
 // --- UI COMPONENTS ---
-const GlassCard = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <div className={`bg-neutral-900/40 backdrop-blur-xl border border-white/5 shadow-2xl rounded-3xl relative overflow-hidden ${className}`}>
+const GlassCard = ({ children, className = "" }: { children: ReactNode; className?: string }) => (
+  <motion.div
+    variants={itemVariants}
+    className={`bg-neutral-900/40 backdrop-blur-xl border border-red-900/30 shadow-2xl relative overflow-hidden group ${className}`}
+    style={{ borderRadius: '16px 4px 16px 4px' }}
+  >
+    <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-red-600/50 rounded-tl-xl opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-x-1 -translate-y-1 group-hover:translate-x-0 group-hover:translate-y-0" />
+    <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-red-600/50 rounded-br-xl opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-1 translate-y-1 group-hover:translate-x-0 group-hover:translate-y-0" />
     <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
     <div className="relative z-10">{children}</div>
-  </div>
+  </motion.div>
 );
 
 interface NeonButtonProps {
-  onClick: () => void;
-  icon?: React.ElementType;
+  onClick: (e?: any) => void;
+  icon?: any;
   label: string;
   variant?: 'primary' | 'secondary' | 'success' | 'danger';
   disabled?: boolean;
@@ -108,44 +114,40 @@ interface NeonButtonProps {
 
 const NeonButton = ({ onClick, icon: Icon, label, variant = 'primary', disabled = false, className = "" }: NeonButtonProps) => {
   const variants = {
-    primary: "bg-red-600 text-white shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:shadow-[0_0_30px_rgba(220,38,38,0.6)] hover:bg-red-500",
-    secondary: "bg-neutral-800/50 text-neutral-400 border border-white/5 hover:text-white hover:border-white/20 hover:bg-white/5",
-    success: "bg-green-600 text-white shadow-[0_0_20px_rgba(34,197,94,0.4)] hover:shadow-[0_0_30px_rgba(34,197,94,0.6)] hover:bg-green-500",
-    danger: "bg-rose-600 text-white shadow-[0_0_20px_rgba(225,29,72,0.4)] hover:shadow-[0_0_30px_rgba(225,29,72,0.6)] hover:bg-rose-500"
+    primary: "bg-red-600 text-white shadow-[0_0_15px_rgba(220,38,38,0.5)] border border-red-400/50 hover:bg-red-500",
+    secondary: "bg-neutral-900/80 text-red-500 border border-red-900 hover:text-red-400 hover:border-red-500 hover:shadow-[0_0_15px_rgba(220,38,38,0.2)] hover:bg-neutral-800",
+    success: "bg-emerald-600 text-white shadow-[0_0_15px_rgba(5,150,105,0.5)] border border-emerald-400/50 hover:bg-emerald-500",
+    danger: "bg-rose-600 text-white shadow-[0_0_15px_rgba(225,29,72,0.5)] border border-rose-400/50 hover:bg-rose-500"
   };
-
   return (
-    <button
+    <motion.button
+      whileHover={{ scale: 1.04 }}
+      whileTap={{ scale: 0.96 }}
       onClick={onClick}
       disabled={disabled}
-      className={`relative overflow-hidden group px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest flex items-center gap-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${className}`}
+      className={`relative overflow-hidden group px-4 py-2.5 sm:px-6 sm:py-3 font-black text-[10px] sm:text-xs uppercase tracking-[0.15em] flex items-center gap-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${className}`}
+      style={{ clipPath: 'polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%)' }}
     >
-      <span className="relative z-10 flex items-center gap-2">
-        {Icon && <Icon size={16} className={variant === 'primary' ? "animate-pulse" : ""} />}
+      <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-in-out pointer-events-none skew-x-12" />
+      <span className="relative z-10 flex items-center gap-2 drop-shadow-md">
+        {Icon && <Icon size={14} />}
         {label}
       </span>
-    </button>
+    </motion.button>
   );
 };
 
-// --- MODAL COMPONENT ---
+// --- MODAL ---
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  children: React.ReactNode;
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  children: ReactNode;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
 const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalProps) => {
-  const sizes = {
-    sm: 'max-w-md',
-    md: 'max-w-2xl',
-    lg: 'max-w-4xl',
-    xl: 'max-w-6xl',
-    full: 'max-w-[95vw]'
-  };
-
+  const sizes = { sm: 'max-w-md', md: 'max-w-2xl', lg: 'max-w-4xl', xl: 'max-w-6xl' };
   return (
     <AnimatePresence>
       {isOpen && (
@@ -157,27 +159,29 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalProps) =>
             onClick={onClose}
             className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
           />
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto pointer-events-none">
             <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className={`w-full ${sizes[size]} my-8`}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: "spring", damping: 20, stiffness: 300 }}
+              className={`w-full ${sizes[size]} my-4 relative pointer-events-auto`}
             >
-              <GlassCard className="p-0">
-                <div className="flex items-center justify-between p-6 border-b border-white/10">
-                  <h2 className="text-2xl font-black text-white">{title}</h2>
-                  <button
-                    onClick={onClose}
-                    className="p-2 hover:bg-white/10 rounded-lg transition-colors text-neutral-400 hover:text-white"
-                  >
-                    <X size={20} />
+              <div className="bg-neutral-950 border border-red-900/50 shadow-[0_0_40px_rgba(220,38,38,0.15)] relative overflow-hidden" style={{ clipPath: 'polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px))' }}>
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-900 via-red-500 to-red-900" />
+                <div className="flex items-center justify-between p-4 sm:p-6 border-b border-red-900/30 bg-black/50">
+                  <div className="flex items-center gap-3">
+                    <Terminal size={18} className="text-red-500" />
+                    <h2 className="text-base sm:text-xl font-black text-white tracking-widest uppercase">{title}</h2>
+                  </div>
+                  <button onClick={onClose} className="p-2 bg-neutral-900/80 hover:bg-red-600 transition-colors text-red-500 hover:text-white border border-red-900/50">
+                    <X size={14} strokeWidth={3} />
                   </button>
                 </div>
-                <div className="p-6 max-h-[70vh] overflow-y-auto">
+                <div className="p-4 sm:p-6 max-h-[75vh] overflow-y-auto bg-[#0a0a0a]">
                   {children}
                 </div>
-              </GlassCard>
+              </div>
             </motion.div>
           </div>
         </>
@@ -188,38 +192,45 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalProps) =>
 
 // --- STATS CARD ---
 interface StatsCardProps {
-  icon: React.ElementType;
+  icon: any;
   label: string;
   value: string | number;
   trend?: { value: number; positive: boolean };
-  color?: string;
+  color?: 'red' | 'blue' | 'green' | 'purple' | 'orange' | 'silver';
 }
 
 const StatsCard = ({ icon: Icon, label, value, trend, color = 'red' }: StatsCardProps) => {
-  const colors = {
-    red: 'from-red-600 to-black',
-    blue: 'from-blue-600 to-black',
-    green: 'from-green-600 to-black',
-    purple: 'from-purple-600 to-black',
-    orange: 'from-orange-600 to-black'
+  const colorStyles = {
+    red: 'text-red-500 border-red-900/50',
+    blue: 'text-blue-500 border-blue-900/50',
+    green: 'text-emerald-500 border-emerald-900/50',
+    purple: 'text-purple-500 border-purple-900/50',
+    orange: 'text-orange-500 border-orange-900/50',
+    silver: 'text-neutral-400 border-neutral-700'
   };
-
   return (
-    <GlassCard className="p-6 group hover:scale-105 transition-transform">
+    <GlassCard className="p-4 sm:p-6">
       <div className="flex justify-between items-start">
-        <div>
-          <p className="text-neutral-400 text-xs font-bold uppercase tracking-wider mb-2">{label}</p>
-          <h3 className="text-3xl font-black text-white">{value}</h3>
+        <div className="min-w-0 flex-1">
+          <p className="text-red-500/80 text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] mb-1 sm:mb-2 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse shrink-0" />
+            <span className="truncate">{label}</span>
+          </p>
+          <h3 className="text-xl sm:text-3xl font-black text-white font-mono tracking-tighter">{value}</h3>
           {trend && (
-            <div className={`flex items-center gap-1 mt-2 text-xs font-bold ${trend.positive ? 'text-green-500' : 'text-red-500'}`}>
+            <div className={`flex items-center gap-1 mt-1 sm:mt-2 text-[9px] sm:text-[10px] font-black uppercase tracking-wider ${trend.positive ? 'text-emerald-500' : 'text-red-500'}`}>
               <TrendingUp size={12} className={trend.positive ? '' : 'rotate-180'} />
-              {trend.value}% vs mes anterior
+              {trend.value}% vs mes ant.
             </div>
           )}
         </div>
-        <div className={`bg-gradient-to-br ${colors[color as keyof typeof colors]} p-3 rounded-xl shadow-lg`}>
-          <Icon size={24} className="text-white" />
-        </div>
+        <motion.div
+          whileHover={{ rotate: 90, scale: 1.2 }}
+          transition={{ type: "spring", stiffness: 200, damping: 10 }}
+          className={`bg-black/50 p-2 sm:p-3 rounded-lg border ml-3 shrink-0 ${colorStyles[color]}`}
+        >
+          <Icon size={18} className="sm:w-6 sm:h-6" />
+        </motion.div>
       </div>
     </GlassCard>
   );
@@ -240,86 +251,75 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
       await signInWithEmailAndPassword(auth, email, pass);
       onLogin();
     } catch (err) {
-      console.error(err);
-      setError("ACCESO DENEGADO - Credenciales inválidas");
+      setError("ACCESO DENEGADO — CÓDIGO 401");
     }
     setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(220,38,38,0.15),transparent_70%)]" />
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150 mix-blend-overlay" />
+    <div className="min-h-screen bg-[#020202] flex items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute inset-0 opacity-20 bg-[linear-gradient(rgba(220,38,38,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.1)_1px,transparent_1px)] bg-[size:40px_40px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_10%,transparent_100%)]" />
+      <motion.div animate={{ scale: [1, 1.1, 1], opacity: [0.1, 0.15, 0.1] }} transition={{ duration: 6, repeat: Infinity }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-red-600/20 rounded-full blur-[150px] pointer-events-none" />
 
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0, filter: 'blur(10px)' }}
-        animate={{ scale: 1, opacity: 1, filter: 'blur(0px)' }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="w-full max-w-md relative z-10"
-      >
-        <GlassCard className="p-10 border-t border-red-500/50">
-          <div className="text-center mb-8 relative">
-            <div className="w-20 h-20 bg-gradient-to-tr from-red-600 to-black rounded-2xl mx-auto flex items-center justify-center shadow-[0_0_30px_rgba(220,38,38,0.5)] mb-4">
-              <Wrench size={32} className="text-white" />
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.8, type: "spring" }} className="w-full max-w-sm relative z-10">
+        <div className="bg-black/60 backdrop-blur-2xl border border-red-900/40 p-6 sm:p-10 relative overflow-hidden shadow-[0_0_50px_rgba(220,38,38,0.1)]" style={{ clipPath: 'polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)' }}>
+          <div className="text-center mb-8">
+            <div className="w-28 h-28 sm:w-36 sm:h-36 mx-auto mb-4 relative flex items-center justify-center">
+              <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className="absolute inset-0 border-[2px] border-red-600/30 rounded-full border-dashed" />
+              <motion.div animate={{ rotate: -360 }} transition={{ duration: 15, repeat: Infinity, ease: "linear" }} className="absolute inset-2 border-[1px] border-red-500/20 rounded-full border-dotted" />
+              <img src="EDM.LOGO_OFFICIAL.png" alt="EDM" className="w-[80%] h-[80%] object-contain drop-shadow-[0_0_20px_rgba(220,38,38,0.6)] relative z-10"
+                onError={(e: any) => { e.currentTarget.style.display = 'none'; }} />
+              <Car size={32} className="text-red-500 absolute hidden" />
             </div>
-            <h1 className="text-3xl font-black text-white tracking-tighter">LIONS<span className="text-red-600">CARS</span></h1>
-            <p className="text-[10px] text-red-500 font-mono tracking-[0.3em] uppercase mt-1">Pro Management System</p>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tighter uppercase">
+              <span className="text-white">EDM</span>{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-800">AUTOMOTRIZ</span>
+            </h1>
+            <p className="text-[9px] text-red-500 font-black tracking-[0.4em] uppercase font-mono mt-1">Terminal de Acceso</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
-            <div className="group">
-              <div className="flex items-center gap-3 bg-black/50 border border-white/10 rounded-xl p-3 focus-within:border-red-500/50 focus-within:shadow-[0_0_15px_rgba(220,38,38,0.2)] transition-all">
-                <Building2 size={16} className="text-neutral-500 group-focus-within:text-red-500" />
-                <input
-                  type="email"
-                  placeholder="EMAIL CORPORATIVO"
-                  className="bg-transparent w-full text-white text-xs font-bold tracking-wider placeholder-neutral-700 outline-none"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  required
-                />
+            <div>
+              <label className="text-[9px] text-red-500/80 font-mono uppercase tracking-widest block mb-1">Email</label>
+              <div className="flex items-center gap-2 bg-black/80 border border-neutral-800 p-3 focus-within:border-red-500 focus-within:shadow-[0_0_10px_rgba(220,38,38,0.2)] transition-all">
+                <Terminal size={14} className="text-red-600/50 shrink-0" />
+                <input type="email" placeholder="admin@edm.cl" className="bg-transparent w-full text-white text-sm font-mono tracking-wider placeholder-neutral-700 outline-none" value={email} onChange={e => setEmail(e.target.value)} required />
               </div>
             </div>
-            <div className="group">
-              <div className="flex items-center gap-3 bg-black/50 border border-white/10 rounded-xl p-3 focus-within:border-red-500/50 focus-within:shadow-[0_0_15px_rgba(220,38,38,0.2)] transition-all">
-                <Lock size={16} className="text-neutral-500 group-focus-within:text-red-500" />
-                <input
-                  type="password"
-                  placeholder="CONTRASEÑA"
-                  className="bg-transparent w-full text-white text-xs font-bold tracking-wider placeholder-neutral-700 outline-none"
-                  value={pass}
-                  onChange={e => setPass(e.target.value)}
-                  required
-                />
+            <div>
+              <label className="text-[9px] text-red-500/80 font-mono uppercase tracking-widest block mb-1">Contraseña</label>
+              <div className="flex items-center gap-2 bg-black/80 border border-neutral-800 p-3 focus-within:border-red-500 focus-within:shadow-[0_0_10px_rgba(220,38,38,0.2)] transition-all">
+                <Lock size={14} className="text-red-600/50 shrink-0" />
+                <input type="password" placeholder="••••••••" className="bg-transparent w-full text-white text-sm font-mono tracking-wider placeholder-neutral-700 outline-none" value={pass} onChange={e => setPass(e.target.value)} required />
               </div>
             </div>
 
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="text-red-500 text-[10px] font-mono text-center bg-red-500/10 p-3 rounded border border-red-500/20 flex items-center justify-center gap-2"
-              >
-                <AlertCircle size={12} />
-                {error}
-              </motion.div>
-            )}
+            <AnimatePresence>
+              {error && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="text-red-400 text-[10px] font-mono text-center bg-red-950/30 p-3 border-l-2 border-red-500 flex items-center gap-2">
+                  <AlertCircle size={12} className="animate-pulse shrink-0" /> {error}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-white text-black font-black py-4 rounded-xl hover:scale-[1.02] transition-transform flex justify-center items-center gap-2 disabled:opacity-50"
-            >
-              {loading ? <Loader2 className="animate-spin" /> : "ACCEDER AL SISTEMA"}
-            </button>
+            <motion.button type="submit" disabled={loading} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+              className="w-full relative overflow-hidden bg-red-600 text-white font-black py-3.5 flex justify-center items-center gap-2 disabled:opacity-50 tracking-[0.2em] text-xs uppercase"
+              style={{ clipPath: 'polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)' }}>
+              <div className="absolute inset-0 bg-gradient-to-r from-red-500 to-red-800 opacity-100 hover:opacity-0 transition-opacity" />
+              <span className="relative z-10 flex items-center gap-2 font-mono">
+                {loading ? <><Cpu className="animate-spin" size={14} /> PROCESANDO...</> : <><Zap size={14} /> INICIAR SESIÓN</>}
+              </span>
+            </motion.button>
           </form>
-        </GlassCard>
+        </div>
       </motion.div>
     </div>
   );
 };
 
-// --- MAIN APP ---
+// =============================================================================
+// MAIN APP
+// =============================================================================
 const App = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
@@ -328,28 +328,25 @@ const App = () => {
   const [clientes, setClientes] = useState<ClienteData[]>([]);
   const [loadingData, setLoadingData] = useState(false);
   const [autoSaved, setAutoSaved] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Modales
   const [modalDetalle, setModalDetalle] = useState<{ isOpen: boolean; cotizacion?: CotizacionData }>({ isOpen: false });
-  const [modalCliente, setModalCliente] = useState<{ isOpen: boolean; cliente?: ClienteData }>({ isOpen: false });
-  const [modalFiltros, setModalFiltros] = useState(false);
   const [modalExportar, setModalExportar] = useState(false);
 
   // Filtros
-  const [filtroEstado, setFiltroEstado] = useState<string>('todos');
-  const [filtroFecha, setFiltroFecha] = useState<string>('todos');
-  const [filtroTipoVehiculo, setFiltroTipoVehiculo] = useState<string>('todos');
+  const [filtroEstado, setFiltroEstado] = useState('todos');
   const [busqueda, setBusqueda] = useState('');
 
-  const empresa = {
+  const empresa = useMemo(() => ({
     rut: '78.161.408-4',
     direccion: 'Av. Gabriela Mistral 925, Alerce',
     telefono: '+56 9 4037 3364',
-    web: 'lionscars.cl',
-    nombre: 'Lions Cars'
-  };
+    web: 'edmautomotriz.cl',
+    nombre: 'EDM Automotriz'
+  }), []);
 
-  // Estados Formulario
+  // Form state
   const [idFirebase, setIdFirebase] = useState<string | null>(null);
   const [cliente, setCliente] = useState('');
   const [rutCliente, setRutCliente] = useState('');
@@ -358,14 +355,291 @@ const App = () => {
   const [vehiculo, setVehiculo] = useState('');
   const [anioVehiculo, setAnioVehiculo] = useState('');
   const [patente, setPatente] = useState('');
-  const [tipoVehiculo, setTipoVehiculo] = useState<CotizacionData['tipoVehiculo']>('auto');
+  const [tipoVehiculo, setTipoVehiculo] = useState('auto');
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
-  const [numeroCotizacion, setNumeroCotizacion] = useState('2026-001');
-  const [notas, setNotas] = useState('Garantía de 3 meses en trabajos realizados. Validez de cotización: 10 días hábiles.');
-  const [items, setItems] = useState<ItemCotizacion[]>([{ id: '1', descripcion: '', precio: 0, cantidad: 1, categoria: 'mecanica' }]);
-  const [estadoCotizacion, setEstadoCotizacion] = useState<CotizacionData['estado']>('pendiente');
+  const [numeroCotizacion, setNumeroCotizacion] = useState('EDM-0001');
+  const [notas, setNotas] = useState('Garantía de pintura: 1 año. Garantía desabolladura: 3 meses. Validez cotización: 10 días hábiles.');
+  const [items, setItems] = useState<ItemCotizacion[]>([{ id: crypto.randomUUID(), descripcion: '', precio: 0, cantidad: 1, categoria: 'desabolladura' }]);
+  const [estadoCotizacion, setEstadoCotizacion] = useState('pendiente');
 
-  // Cargar datos
+  // ===== GENERAR HTML PDF - acepta datos externos =====
+  const generarHTMLPDF = useCallback((datos?: CotizacionData) => {
+    const fmtLocal = (n: number) =>
+      new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(n);
+
+    // Usar datos pasados como parámetro o caer en los estados del form
+    const _items           = datos?.items           ?? items;
+    const _cliente         = datos?.cliente         ?? cliente;
+    const _rutCliente      = datos?.rutCliente      ?? rutCliente;
+    const _telefonoCliente = datos?.telefonoCliente ?? telefonoCliente;
+    const _vehiculo        = datos?.vehiculo        ?? vehiculo;
+    const _patente         = datos?.patente         ?? patente;
+    const _anioVehiculo    = datos?.anioVehiculo    ?? anioVehiculo;
+    const _notas           = datos?.notas           ?? notas;
+    const _numeroCotizacion = datos?.numeroCotizacion ?? numeroCotizacion;
+    const _fecha           = datos?.fecha           ?? fecha;
+    const _estadoCotizacion = datos?.estado         ?? estadoCotizacion;
+
+    const sub   = _items.reduce((a, i) => a + i.precio * i.cantidad, 0);
+    const iva   = Math.round(sub * 0.19);
+    const total = Math.round(sub * 1.19);
+
+    const filas = _items.map(item => `
+      <tr>
+        <td style="padding:12px 14px;border-bottom:1px solid #e5e7eb;font-size:12px;color:#111">${item.descripcion || '-'}</td>
+        <td style="padding:12px 8px;border-bottom:1px solid #e5e7eb;font-size:11px;color:#6b7280;text-align:center;text-transform:capitalize">${item.categoria}</td>
+        <td style="padding:12px 8px;border-bottom:1px solid #e5e7eb;font-size:12px;font-family:monospace;text-align:center;color:#111">${fmtLocal(item.precio)}</td>
+        <td style="padding:12px 8px;border-bottom:1px solid #e5e7eb;font-size:12px;font-family:monospace;text-align:center;color:#111">${item.cantidad}</td>
+        <td style="padding:12px 14px;border-bottom:1px solid #e5e7eb;font-size:12px;font-family:monospace;text-align:right;font-weight:700;color:#dc2626">${fmtLocal(item.precio * item.cantidad)}</td>
+      </tr>
+    `).join('');
+
+    return `
+      <div style="font-family:Arial,sans-serif;background:white;color:#111;width:794px;padding:48px 52px;box-sizing:border-box;">
+        <style>
+          *{box-sizing:border-box;}
+          .hdr{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:24px;border-bottom:2px solid #dc2626;margin-bottom:28px;}
+          .cn{font-size:26px;font-weight:900;letter-spacing:-1px;text-transform:uppercase;}
+          .cn span{color:#dc2626;}
+          .cs{font-size:9px;text-transform:uppercase;letter-spacing:4px;color:#6b7280;margin-top:4px;}
+          .cd{margin-top:10px;font-size:10px;color:#6b7280;line-height:1.8;font-family:monospace;}
+          .cd b{color:#111;}
+          .dt{font-size:34px;font-weight:900;text-transform:uppercase;color:#1f2937;letter-spacing:-1px;margin-bottom:14px;}
+          .dr{display:flex;justify-content:space-between;gap:20px;font-size:10px;font-family:monospace;color:#6b7280;margin-bottom:5px;}
+          .dr b{color:#111;}
+          .sb{display:inline-block;padding:2px 10px;background:#fee2e2;color:#dc2626;font-weight:700;font-size:9px;text-transform:uppercase;letter-spacing:2px;border:1px solid #fca5a5;}
+          .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px;}
+          .card{border:1px solid #e5e7eb;padding:18px;background:#fafafa;}
+          .ct{font-size:9px;font-family:monospace;text-transform:uppercase;letter-spacing:3px;color:#6b7280;margin-bottom:12px;}
+          .fl{font-size:8px;text-transform:uppercase;letter-spacing:2px;color:#9ca3af;margin-bottom:3px;}
+          .fv{font-size:13px;font-weight:700;color:#111;border-bottom:1px solid #e5e7eb;padding-bottom:5px;margin-bottom:10px;min-height:24px;}
+          .fg2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+          table{width:100%;border-collapse:collapse;margin-bottom:24px;}
+          thead{background:#f9fafb;}
+          th{padding:10px 14px;font-size:9px;font-family:monospace;text-transform:uppercase;letter-spacing:2px;color:#6b7280;border-bottom:2px solid #e5e7eb;font-weight:700;text-align:left;}
+          .tr{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;}
+          .nb{flex:1;border:1px solid #e5e7eb;padding:14px;font-size:11px;color:#374151;line-height:1.7;background:#fafafa;white-space:pre-wrap;}
+          .tb{width:260px;border:1px solid #e5e7eb;padding:18px;background:#fafafa;flex-shrink:0;}
+          .tl{display:flex;justify-content:space-between;font-size:11px;font-family:monospace;color:#6b7280;margin-bottom:7px;}
+          .tl b{color:#111;}
+          .td{border:none;border-top:1px solid #e5e7eb;margin:10px 0;}
+          .tfl{font-size:9px;font-family:monospace;text-transform:uppercase;letter-spacing:3px;color:#dc2626;text-align:right;margin-bottom:3px;}
+          .tfv{font-size:30px;font-weight:900;font-family:monospace;text-align:right;color:#111;letter-spacing:-1px;}
+          .ft{margin-top:36px;padding-top:14px;border-top:1px solid #e5e7eb;text-align:center;}
+          .fb{width:36px;height:3px;background:#dc2626;margin:0 auto 8px;}
+          .fn{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:4px;color:#374151;}
+          .fs{font-size:8px;font-family:monospace;text-transform:uppercase;letter-spacing:2px;color:#9ca3af;margin-top:3px;}
+        </style>
+        <div class="hdr">
+          <div>
+            <p style="font-size:9px;font-family:monospace;text-transform:uppercase;letter-spacing:3px;color:#9ca3af;margin-bottom:10px">// ENTIDAD AUTORIZADA</p>
+            <div class="cn">EDM <span>AUTOMOTRIZ</span></div>
+            <div class="cs">Pintura • Desabolladura</div>
+            <div class="cd">
+              <div><b>LOC:</b> ${empresa.direccion}</div>
+              <div><b>ID:</b> ${empresa.rut}</div>
+              <div><b>COM:</b> ${empresa.telefono} | ${empresa.web}</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div class="dt">COTIZACIÓN</div>
+            <div class="dr"><span>[DOC_ID]</span><b>${_numeroCotizacion}</b></div>
+            <div class="dr"><span>[DATE]</span><b>${new Date(_fecha + "T00:00:00").toLocaleDateString("es-CL")}</b></div>
+            <div class="dr"><span>[STATUS]</span><span class="sb">${_estadoCotizacion.replace('_', ' ')}</span></div>
+          </div>
+        </div>
+
+        <div class="g2">
+          <div class="card">
+            <div class="ct">// TARGET_INFO</div>
+            <div class="fl">Nombre / Razón Social</div>
+            <div class="fv">${_cliente || '-'}</div>
+            <div class="fg2">
+              <div><div class="fl">RUT</div><div class="fv" style="font-family:monospace">${_rutCliente || '-'}</div></div>
+              <div><div class="fl">Teléfono</div><div class="fv" style="font-family:monospace">${_telefonoCliente || '-'}</div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="ct">// ASSET_DATA</div>
+            <div class="fl">Marca / Modelo</div>
+            <div class="fv">${_vehiculo || '-'}</div>
+            <div class="fg2">
+              <div><div class="fl">Patente</div><div class="fv" style="font-family:monospace;font-weight:900;letter-spacing:2px">${_patente || '-'}</div></div>
+              <div><div class="fl">Año</div><div class="fv" style="font-family:monospace">${_anioVehiculo || '-'}</div></div>
+            </div>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left">Especificación</th>
+              <th style="text-align:center">Categoría</th>
+              <th style="text-align:center">Valor Unit.</th>
+              <th style="text-align:center">Cant.</th>
+              <th style="text-align:right">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>${filas}</tbody>
+        </table>
+
+        <div class="tr">
+          <div>
+            <div style="font-size:9px;font-family:monospace;text-transform:uppercase;letter-spacing:3px;color:#9ca3af;margin-bottom:6px">// NOTAS</div>
+            <div class="nb">${_notas || 'Sin notas.'}</div>
+          </div>
+          <div class="tb">
+            <div class="tl"><span>Subtotal Neto</span><b>${fmtLocal(sub)}</b></div>
+            <div class="tl"><span>IVA (19%)</span><b>${fmtLocal(iva)}</b></div>
+            <hr class="td"/>
+            <div class="tfl">[ VALOR FINAL ]</div>
+            <div class="tfv">${fmtLocal(total)}</div>
+          </div>
+        </div>
+
+        <div class="ft">
+          <div class="fb"></div>
+          <div class="fn">${empresa.nombre}</div>
+          <div class="fs">SISTEMA EDM PRO — DATOS SUJETOS A EVALUACIÓN FÍSICA</div>
+        </div>
+      </div>
+    `;
+  }, [items, cliente, rutCliente, telefonoCliente, vehiculo, patente, anioVehiculo, notas, numeroCotizacion, fecha, estadoCotizacion, empresa]);
+
+// ===== DESCARGAR PDF - acepta datos externos =====
+const descargarPDF = useCallback((datos?: CotizacionData) => {
+  const htmlContent = generarHTMLPDF(datos);
+  const _num = datos?.numeroCotizacion ?? numeroCotizacion;
+
+  const ventana = window.open('', '_blank', 'width=960,height=1100,scrollbars=yes');
+  if (!ventana) {
+    alert("El navegador bloqueó la ventana emergente. Permite pop-ups para este sitio.");
+    return;
+  }
+
+  const paginaHTML = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <title>EDM_Cotizacion_${_num}</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      background: #111;
+      font-family: Arial, Helvetica, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    body { display: flex; flex-direction: column; align-items: center; padding: 0 0 90px 0; }
+    .page-wrap {
+      width: 860px;
+      background: white;
+      margin: 20px auto;
+      box-shadow: 0 10px 60px rgba(0,0,0,0.5);
+    }
+    .toolbar {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #0a0a0a;
+      border-top: 2px solid #dc2626;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      padding: 14px 20px;
+      z-index: 9999;
+      box-shadow: 0 -8px 30px rgba(220,38,38,0.15);
+    }
+    .btn {
+      padding: 13px 28px;
+      font-family: Arial, Helvetica, sans-serif;
+      font-weight: 900;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+      clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+    }
+    .btn-pdf { background: #dc2626; color: white; box-shadow: 0 0 20px rgba(220,38,38,0.4); }
+    .btn-pdf:hover { background: #b91c1c; }
+    .btn-print { background: #1a1a1a; color: #ccc; border: 1px solid #333; }
+    .btn-print:hover { background: #2a2a2a; color: white; }
+    .btn-close { background: transparent; color: #555; border: 1px solid #222; }
+    .btn-close:hover { color: #888; border-color: #444; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    @media print {
+      body { background: white; padding: 0; }
+      .toolbar { display: none !important; }
+      .page-wrap { margin: 0; box-shadow: none; width: 100%; }
+      @page { size: A4 portrait; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap" id="cotizacion-doc">${htmlContent}</div>
+  <div class="toolbar">
+    <button class="btn btn-close" onclick="window.close()">✕ Cerrar</button>
+    <button class="btn btn-print" onclick="window.print()">🖨 Imprimir</button>
+    <button class="btn btn-pdf" id="btnPDF" onclick="guardarPDF()">⬇ Guardar PDF</button>
+  </div>
+  <script>
+    function guardarPDF() {
+      var btn = document.getElementById('btnPDF');
+      btn.disabled = true;
+      btn.textContent = '⏳ Generando...';
+      var el = document.getElementById('cotizacion-doc');
+      var opt = {
+        margin: [10, 10, 10, 10],
+        filename: 'EDM_Cotizacion_${_num}.pdf',
+        image: { type: 'jpeg', quality: 0.97 },
+        html2canvas: {
+          scale: 1.5,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          windowWidth: 900
+        },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait',
+          compress: true
+        }
+      };
+      html2pdf().set(opt).from(el).save()
+        .then(function() {
+          btn.textContent = '✓ Descargado';
+          btn.style.background = '#059669';
+          setTimeout(function() {
+            btn.textContent = '⬇ Guardar PDF';
+            btn.style.background = '#dc2626';
+            btn.disabled = false;
+          }, 2500);
+        })
+        .catch(function(err) {
+          alert('Error: ' + err);
+          btn.textContent = '⬇ Guardar PDF';
+          btn.disabled = false;
+        });
+    }
+  <\/script>
+</body>
+</html>`;
+
+  ventana.document.write(paginaHTML);
+  ventana.document.close();
+}, [generarHTMLPDF, numeroCotizacion]);
+
+  // ===== DESCARGAR DESDE LISTA — directo, sin cambio de vista =====
+  const descargarPDFDesdeLista = async (cot: CotizacionData) => {
+    await descargarPDF(cot);
+  };
+
   const cargarHistorial = useCallback(async () => {
     if (!auth.currentUser) return;
     setLoadingData(true);
@@ -373,9 +647,7 @@ const App = () => {
       const q = query(collection(db, "cotizaciones"), orderBy("fecha", "desc"));
       const snap = await getDocs(q);
       setHistorial(snap.docs.map(d => ({ id_firebase: d.id, ...d.data() } as CotizacionData)));
-    } catch (error) {
-      console.error("Error cargando historial:", error);
-    }
+    } catch (error) { console.error(error); }
     setLoadingData(false);
   }, []);
 
@@ -384,270 +656,149 @@ const App = () => {
     try {
       const snap = await getDocs(collection(db, "clientes"));
       setClientes(snap.docs.map(d => ({ id_firebase: d.id, ...d.data() } as ClienteData)));
-    } catch (error) {
-      console.error("Error cargando clientes:", error);
-    }
+    } catch (error) { console.error(error); }
   }, []);
 
   useEffect(() => {
     onAuthStateChanged(auth, u => {
       setUser(u);
       setLoadingAuth(false);
-      if (u) {
-        cargarHistorial();
-        cargarClientes();
-      }
+      if (u) { cargarHistorial(); cargarClientes(); }
     });
   }, [cargarHistorial, cargarClientes]);
 
-  // Auto-save mejorado
+  // Auto-save borrador
   useEffect(() => {
     if (vista === 'editor' && !idFirebase) {
       const timer = setTimeout(() => {
-        const dataToSave = {
-          cliente, rutCliente, emailCliente, telefonoCliente,
-          vehiculo, anioVehiculo, patente, tipoVehiculo, items, notas
-        };
-        localStorage.setItem('lions_borrador', JSON.stringify(dataToSave));
-
+        const data = { cliente, rutCliente, emailCliente, telefonoCliente, vehiculo, anioVehiculo, patente, tipoVehiculo, items, notas };
+        localStorage.setItem('edm_borrador', JSON.stringify(data));
         if (cliente || vehiculo || items.some(i => i.descripcion)) {
           setAutoSaved(true);
           setTimeout(() => setAutoSaved(false), 2000);
         }
       }, 1500);
-
       return () => clearTimeout(timer);
     }
   }, [cliente, rutCliente, emailCliente, telefonoCliente, vehiculo, anioVehiculo, patente, tipoVehiculo, items, notas, vista, idFirebase]);
 
-  // Cálculos
   const totales = useMemo(() => {
-    const sub = items.reduce((a, i) => a + (i.precio * i.cantidad), 0);
+    const sub = items.reduce((a, i) => a + i.precio * i.cantidad, 0);
     return { sub, iva: Math.round(sub * 0.19), total: Math.round(sub * 1.19) };
   }, [items]);
 
-  // Stats calculadas
-  const stats: StatsData = useMemo(() => {
+  const stats = useMemo(() => {
     const totalVentas = historial.reduce((a, b) => a + (b.totalFinal || 0), 0);
-    const totalCotizaciones = historial.length;
-    const totalClientes = clientes.length;
-
     const hoy = new Date();
     const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-
     const cotizacionesMes = historial.filter(c => new Date(c.fecha) >= primerDiaMes);
     const ventasMes = cotizacionesMes.reduce((a, b) => a + (b.totalFinal || 0), 0);
 
-    const clientesNuevosMes = clientes.filter(c =>
-      c.fechaRegistro && new Date(c.fechaRegistro.toDate()) >= primerDiaMes
-    ).length;
-
-    // Servicios por categoría
-    const serviciosPorCategoria: { [key: string]: { cantidad: number; total: number } } = {};
+    const serviciosPorCategoria: Record<string, { cantidad: number, total: number }> = {};
     historial.forEach(cot => {
       cot.items.forEach(item => {
         const cat = item.categoria || 'otros';
-        if (!serviciosPorCategoria[cat]) {
-          serviciosPorCategoria[cat] = { cantidad: 0, total: 0 };
-        }
+        if (!serviciosPorCategoria[cat]) serviciosPorCategoria[cat] = { cantidad: 0, total: 0 };
         serviciosPorCategoria[cat].cantidad += item.cantidad;
         serviciosPorCategoria[cat].total += item.precio * item.cantidad;
       });
     });
-    const serviciosMasVendidos = Object.entries(serviciosPorCategoria)
-      .map(([categoria, data]) => ({ categoria, ...data }))
-      .sort((a, b) => b.total - a.total);
+    const serviciosMasVendidos = Object.entries(serviciosPorCategoria).map(([categoria, data]) => ({ categoria, ...data })).sort((a, b) => b.total - a.total);
 
-    // Vehículos por tipo
-    const vehiculosPorTipo: { [key: string]: number } = {};
-    historial.forEach(cot => {
-      const tipo = cot.tipoVehiculo || 'otro';
-      vehiculosPorTipo[tipo] = (vehiculosPorTipo[tipo] || 0) + 1;
-    });
-    const vehiculosMasAtendidos = Object.entries(vehiculosPorTipo)
-      .map(([tipo, cantidad]) => ({ tipo, cantidad }))
-      .sort((a, b) => b.cantidad - a.cantidad);
+    const estadosPorTipo: Record<string, number> = {};
+    historial.forEach(cot => { const e = cot.estado || 'pendiente'; estadosPorTipo[e] = (estadosPorTipo[e] || 0) + 1; });
+    const estadoCotizaciones = Object.entries(estadosPorTipo).map(([estado, cantidad]) => ({ estado, cantidad }));
 
-    // Estados
-    const estadosPorTipo: { [key: string]: number } = {};
-    historial.forEach(cot => {
-      const estado = cot.estado || 'pendiente';
-      estadosPorTipo[estado] = (estadosPorTipo[estado] || 0) + 1;
-    });
-    const estadoCotizaciones = Object.entries(estadosPorTipo)
-      .map(([estado, cantidad]) => ({ estado, cantidad }));
-
-    return {
-      totalVentas,
-      totalCotizaciones,
-      totalClientes,
-      ventasMes,
-      cotizacionesMes: cotizacionesMes.length,
-      clientesNuevosMes,
-      serviciosMasVendidos,
-      vehiculosMasAtendidos,
-      estadoCotizaciones
-    };
+    return { totalVentas, totalCotizaciones: historial.length, totalClientes: clientes.length, ventasMes, cotizacionesMes: cotizacionesMes.length, serviciosMasVendidos, estadoCotizaciones };
   }, [historial, clientes]);
 
-  // Filtros aplicados
   const historialFiltrado = useMemo(() => {
     return historial.filter(cot => {
       const matchEstado = filtroEstado === 'todos' || cot.estado === filtroEstado;
-      const matchTipo = filtroTipoVehiculo === 'todos' || cot.tipoVehiculo === filtroTipoVehiculo;
       const matchBusqueda = busqueda === '' ||
         cot.cliente.toLowerCase().includes(busqueda.toLowerCase()) ||
         cot.patente.toLowerCase().includes(busqueda.toLowerCase()) ||
         cot.vehiculo.toLowerCase().includes(busqueda.toLowerCase());
-
-      let matchFecha = true;
-      if (filtroFecha !== 'todos') {
-        const fechaCot = new Date(cot.fecha);
-        const hoy = new Date();
-        if (filtroFecha === 'hoy') {
-          matchFecha = fechaCot.toDateString() === hoy.toDateString();
-        } else if (filtroFecha === 'semana') {
-          const semanaAtras = new Date(hoy.getTime() - 7 * 24 * 60 * 60 * 1000);
-          matchFecha = fechaCot >= semanaAtras;
-        } else if (filtroFecha === 'mes') {
-          matchFecha = fechaCot.getMonth() === hoy.getMonth() && fechaCot.getFullYear() === hoy.getFullYear();
-        }
-      }
-
-      return matchEstado && matchTipo && matchBusqueda && matchFecha;
+      return matchEstado && matchBusqueda;
     });
-  }, [historial, filtroEstado, filtroTipoVehiculo, busqueda, filtroFecha]);
+  }, [historial, filtroEstado, busqueda]);
 
   const guardar = async () => {
     if (!user) return;
     setLoadingData(true);
-
-    const data: Partial<CotizacionData> = {
-      cliente,
-      rutCliente,
-      emailCliente,
-      telefonoCliente,
-      vehiculo,
-      anioVehiculo,
-      patente,
-      tipoVehiculo,
-      fecha,
-      numeroCotizacion,
-      items,
-      notas,
-      totalFinal: totales.total,
-      estado: estadoCotizacion,
-      ultimaModificacion: Timestamp.now()
+    const data: any = {
+      cliente, rutCliente, emailCliente, telefonoCliente, vehiculo, anioVehiculo, patente, tipoVehiculo, fecha,
+      numeroCotizacion, items, notas, totalFinal: totales.total, estado: estadoCotizacion, ultimaModificacion: Timestamp.now()
     };
-
     try {
-      if (idFirebase) {
-        await updateDoc(doc(db, "cotizaciones", idFirebase), data);
-      } else {
-        data.fechaCreacion = Timestamp.now();
-        await addDoc(collection(db, "cotizaciones"), data);
-      }
-
-      localStorage.removeItem('lions_borrador');
+      if (idFirebase) await updateDoc(doc(db, "cotizaciones", idFirebase), data);
+      else { data.fechaCreacion = Timestamp.now(); await addDoc(collection(db, "cotizaciones"), data); }
+      localStorage.removeItem('edm_borrador');
       await cargarHistorial();
       setVista('dashboard');
-    } catch (e) {
-      console.error(e);
-      alert("Error al guardar la cotización.");
-    }
+    } catch (e) { console.error(e); alert("Error al guardar."); }
     setLoadingData(false);
   };
 
   const eliminar = async (id: string) => {
-    if (!window.confirm("¿Eliminar esta cotización permanentemente?")) return;
-
+    if (!window.confirm("¿Confirma eliminación permanente?")) return;
     setLoadingData(true);
     try {
       await deleteDoc(doc(db, "cotizaciones", id));
       await cargarHistorial();
       if (vista === 'editor') setVista('dashboard');
       setModalDetalle({ isOpen: false });
-    } catch (error) {
-      console.error("Error eliminando:", error);
-      alert("Error al eliminar la cotización.");
-    }
+    } catch (e) { console.error(e); alert("Error al eliminar."); }
     setLoadingData(false);
   };
 
   const abrir = (d?: CotizacionData) => {
     if (d) {
       setIdFirebase(d.id_firebase || null);
-      setCliente(d.cliente);
-      setRutCliente(d.rutCliente);
-      setEmailCliente(d.emailCliente || '');
-      setTelefonoCliente(d.telefonoCliente || '');
-      setVehiculo(d.vehiculo);
-      setAnioVehiculo(d.anioVehiculo);
-      setPatente(d.patente);
-      setTipoVehiculo(d.tipoVehiculo || 'auto');
-      setFecha(d.fecha);
-      setNumeroCotizacion(d.numeroCotizacion);
-      setItems(d.items);
-      setNotas(d.notas);
-      setEstadoCotizacion(d.estado || 'pendiente');
+      setCliente(d.cliente); setRutCliente(d.rutCliente); setEmailCliente(d.emailCliente || ''); setTelefonoCliente(d.telefonoCliente || '');
+      setVehiculo(d.vehiculo); setAnioVehiculo(d.anioVehiculo); setPatente(d.patente); setTipoVehiculo(d.tipoVehiculo || 'auto');
+      setFecha(d.fecha); setNumeroCotizacion(d.numeroCotizacion); setItems(d.items); setNotas(d.notas); setEstadoCotizacion(d.estado || 'pendiente');
     } else {
-      const borrador = localStorage.getItem('lions_borrador');
-      if (borrador && window.confirm("⚠️ Tienes una cotización sin guardar. ¿Deseas recuperarla?")) {
+      const borrador = localStorage.getItem('edm_borrador');
+      if (borrador && window.confirm("⚠️ Tienes un borrador guardado. ¿Restaurar?")) {
         try {
           const data = JSON.parse(borrador);
           setIdFirebase(null);
-          setCliente(data.cliente || '');
-          setRutCliente(data.rutCliente || '');
-          setEmailCliente(data.emailCliente || '');
-          setTelefonoCliente(data.telefonoCliente || '');
-          setVehiculo(data.vehiculo || '');
-          setAnioVehiculo(data.anioVehiculo || '');
-          setPatente(data.patente || '');
-          setTipoVehiculo(data.tipoVehiculo || 'auto');
-          setItems(data.items || [{ id: crypto.randomUUID(), descripcion: '', precio: 0, cantidad: 1, categoria: 'mecanica' }]);
-          setNotas(data.notas || 'Garantía de 3 meses en trabajos realizados. Validez de cotización: 10 días hábiles.');
-          setNumeroCotizacion('2026-' + (historial.length + 1).toString().padStart(3, '0'));
+          setCliente(data.cliente || ''); setRutCliente(data.rutCliente || ''); setEmailCliente(data.emailCliente || ''); setTelefonoCliente(data.telefonoCliente || '');
+          setVehiculo(data.vehiculo || ''); setAnioVehiculo(data.anioVehiculo || ''); setPatente(data.patente || ''); setTipoVehiculo(data.tipoVehiculo || 'auto');
+          setItems(data.items || [{ id: crypto.randomUUID(), descripcion: '', precio: 0, cantidad: 1, categoria: 'desabolladura' }]);
+          setNotas(data.notas || 'Garantía de pintura: 1 año. Garantía desabolladura: 3 meses. Validez cotización: 10 días.');
+          setNumeroCotizacion('EDM-' + (historial.length + 1).toString().padStart(4, '0'));
           setEstadoCotizacion('pendiente');
-        } catch (e) {
-          localStorage.removeItem('lions_borrador');
-          resetForm();
-        }
-      } else {
-        resetForm();
-      }
+        } catch { localStorage.removeItem('edm_borrador'); resetForm(); }
+      } else { resetForm(); }
     }
+    setSidebarOpen(false);
     setVista('editor');
   };
 
   const resetForm = () => {
     setIdFirebase(null);
-    setCliente('');
-    setRutCliente('');
-    setEmailCliente('');
-    setTelefonoCliente('');
-    setVehiculo('');
-    setAnioVehiculo('');
-    setPatente('');
-    setTipoVehiculo('auto');
-    setItems([{ id: crypto.randomUUID(), descripcion: '', precio: 0, cantidad: 1, categoria: 'mecanica' }]);
-    setNumeroCotizacion('2026-' + (historial.length + 1).toString().padStart(3, '0'));
-    setNotas('Garantía de 3 meses en trabajos realizados. Validez de cotización: 10 días hábiles.');
+    setCliente(''); setRutCliente(''); setEmailCliente(''); setTelefonoCliente('');
+    setVehiculo(''); setAnioVehiculo(''); setPatente(''); setTipoVehiculo('auto');
+    setItems([{ id: crypto.randomUUID(), descripcion: '', precio: 0, cantidad: 1, categoria: 'desabolladura' }]);
+    setNumeroCotizacion('EDM-' + (historial.length + 1).toString().padStart(4, '0'));
+    setNotas('Garantía de pintura: 1 año. Garantía desabolladura: 3 meses. Validez cotización: 10 días.');
     setEstadoCotizacion('pendiente');
   };
 
   const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(n);
 
-  const exportarExcel = () => {
-    alert("Exportación a Excel - Próximamente con librería XLSX");
-    setModalExportar(false);
-  };
-
+  // Loading auth
   if (loadingAuth) {
     return (
-      <div className="h-screen bg-black flex items-center justify-center">
+      <div className="h-screen bg-[#020202] flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="animate-spin text-red-600 mx-auto mb-4" size={48} />
-          <p className="text-neutral-400 font-mono text-sm">Iniciando sistema...</p>
+          <div className="relative w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+            <motion.div animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity, ease: "linear" }} className="absolute inset-0 border-t-2 border-r-2 border-red-600 rounded-full" />
+            <Cpu className="text-red-500" size={28} />
+          </div>
+          <p className="text-red-500 font-mono text-xs tracking-widest animate-pulse uppercase">Conectando...</p>
         </div>
       </div>
     );
@@ -655,806 +806,423 @@ const App = () => {
 
   if (!user) return <LoginScreen onLogin={() => { }} />;
 
+  // Nav items
+  const navItems = [
+    { id: 'dashboard', icon: BarChart3, label: 'Dashboard' },
+    { id: 'clientes', icon: Users, label: 'Directorio' },
+    { id: 'analytics', icon: Activity, label: 'Métricas' },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#050505] text-neutral-200 font-sans selection:bg-red-500/30 overflow-x-hidden">
-      <div className="fixed inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03] pointer-events-none z-50 mix-blend-overlay"></div>
+    <div className="min-h-screen bg-[#020202] text-neutral-200 selection:bg-red-500/30 overflow-x-hidden relative">
+
+      {/* Background */}
+      <div className="fixed inset-0 opacity-10 pointer-events-none z-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:30px_30px]" />
+      <div className="fixed top-[-20%] left-[-10%] w-[50%] h-[50%] bg-red-900/10 rounded-full blur-[150px] pointer-events-none z-0" />
+      <div className="fixed bottom-[-20%] right-[-10%] w-[50%] h-[50%] bg-red-900/10 rounded-full blur-[150px] pointer-events-none z-0" />
+
+      {/* Mobile overlay */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/70 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        )}
+      </AnimatePresence>
 
       {/* SIDEBAR */}
-      <div className="fixed left-0 top-0 h-full w-20 bg-neutral-950/50 backdrop-blur-xl border-r border-white/5 flex flex-col items-center py-8 gap-6 z-40">
-        <div className="w-12 h-12 bg-gradient-to-br from-red-600 to-black rounded-xl flex items-center justify-center mb-4">
-          <Wrench size={24} className="text-white" />
+      <motion.nav
+        initial={false}
+        animate={{ x: sidebarOpen ? 0 : -80 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="fixed left-0 top-0 h-full w-[72px] bg-black/90 backdrop-blur-2xl border-r border-red-900/30 flex flex-col items-center py-6 gap-4 z-40 shadow-[4px_0_30px_rgba(220,38,38,0.1)] lg:translate-x-0"
+      >
+        {/* Logo */}
+        <div className="w-11 h-11 bg-neutral-950 flex items-center justify-center border border-red-900/50 hover:border-red-500 transition-all mb-4"
+          style={{ clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)' }}>
+          <img src="EDM.LOGO_OFFICIAL.png" alt="EDM" className="w-8 h-8 object-contain" onError={(e: any) => { e.currentTarget.style.display = 'none'; }} />
         </div>
 
-        <button
-          onClick={() => setVista('dashboard')}
-          className={`p-4 rounded-xl transition-colors relative group ${vista === 'dashboard' ? 'bg-red-600 text-white' : 'text-neutral-500 hover:text-white hover:bg-white/5'}`}
-        >
-          <BarChart3 size={20} />
-          <span className="absolute left-full ml-4 px-3 py-2 bg-neutral-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-            Dashboard
-          </span>
-        </button>
+        <div className="w-6 h-px bg-red-900/50" />
 
-        <button
-          onClick={() => setVista('clientes')}
-          className={`p-4 rounded-xl transition-colors relative group ${vista === 'clientes' ? 'bg-red-600 text-white' : 'text-neutral-500 hover:text-white hover:bg-white/5'}`}
-        >
-          <Users size={20} />
-          <span className="absolute left-full ml-4 px-3 py-2 bg-neutral-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-            Clientes
-          </span>
-        </button>
-
-        <button
-          onClick={() => setVista('analytics')}
-          className={`p-4 rounded-xl transition-colors relative group ${vista === 'analytics' ? 'bg-red-600 text-white' : 'text-neutral-500 hover:text-white hover:bg-white/5'}`}
-        >
-          <Activity size={20} />
-          <span className="absolute left-full ml-4 px-3 py-2 bg-neutral-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-            Analytics
-          </span>
-        </button>
+        {navItems.map(item => (
+          <div key={item.id} className="relative group w-full flex justify-center">
+            {vista === item.id && (
+              <motion.div layoutId="activeTab" className="absolute -left-0 top-1/2 -translate-y-1/2 w-0.5 h-7 bg-red-500 shadow-[0_0_10px_rgba(220,38,38,0.8)]" />
+            )}
+            <button onClick={() => { setVista(item.id as any); setSidebarOpen(false); }}
+              className={`p-3 transition-all duration-300 relative ${vista === item.id ? 'bg-red-950/50 text-red-500 border border-red-900/50' : 'text-neutral-500 hover:text-red-400 hover:bg-red-950/30 border border-transparent'}`}
+              style={{ clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)' }}>
+              <item.icon size={18} />
+            </button>
+            <span className="absolute left-full ml-3 px-2.5 py-1.5 bg-red-950 text-red-100 text-[9px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-red-900 z-50">
+              {item.label}
+            </span>
+          </div>
+        ))}
 
         <div className="flex-1" />
 
-        <button
-          onClick={() => signOut(auth)}
-          className="p-4 rounded-xl text-neutral-500 hover:text-red-500 hover:bg-white/5 transition-colors relative group"
-        >
-          <LogOut size={20} />
-          <span className="absolute left-full ml-4 px-3 py-2 bg-neutral-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-            Cerrar Sesión
+        <div className="relative group w-full flex justify-center">
+          <button onClick={() => signOut(auth)} className="p-3 text-neutral-600 hover:text-red-500 hover:bg-red-950/30 transition-colors border border-transparent"
+            style={{ clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)' }}>
+            <LogOut size={18} />
+          </button>
+          <span className="absolute left-full ml-3 px-2.5 py-1.5 bg-neutral-900 text-neutral-400 text-[9px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none border border-neutral-700 z-50">
+            Salir
           </span>
+        </div>
+      </motion.nav>
+
+      {/* Mobile top bar */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-black/90 backdrop-blur-xl border-b border-red-900/30 flex items-center justify-between px-4 py-3">
+        <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-2 text-neutral-400 hover:text-red-400 transition-colors">
+          <Menu size={20} />
+        </button>
+        <span className="text-white font-black text-sm tracking-wider uppercase">EDM <span className="text-red-500">Automotriz</span></span>
+        <button onClick={() => abrir()} className="p-2 bg-red-600 text-white">
+          <Plus size={18} />
         </button>
       </div>
 
       {/* MAIN CONTENT */}
-      <div className="ml-20">
+      <div className="lg:ml-[72px] relative z-10 pt-14 lg:pt-0">
         <AnimatePresence mode='wait'>
-          {/* DASHBOARD */}
+
+          {/* ======================== DASHBOARD ======================== */}
           {vista === 'dashboard' && (
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="max-w-[1800px] mx-auto p-8 relative z-10"
-            >
-              <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8 mb-12">
+            <motion.div key="dashboard" variants={containerVariants} initial="hidden" animate="show" exit={{ opacity: 0, x: 20 }}
+              className="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-10">
+
+              {/* Header */}
+              <motion.header variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-8">
                 <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="h-10 w-1 bg-red-600 rounded-full shadow-[0_0_15px_red]"></div>
-                    <h1 className="text-5xl font-black text-white tracking-tighter">
-                      CENTRO DE <span className="text-red-600">CONTROL</span>
-                    </h1>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="h-10 w-1.5 bg-gradient-to-b from-red-500 to-red-800 shadow-[0_0_15px_rgba(220,38,38,0.8)]" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 80%, 0 20%)' }} />
+                    <h1 className="text-3xl sm:text-4xl font-black tracking-tighter text-white uppercase">Módulo de Control</h1>
                   </div>
-                  <p className="text-neutral-500 font-mono text-xs tracking-widest pl-4">
-                    Sistema de Gestión Integral • {empresa.nombre}
+                  <p className="text-red-500/80 font-mono font-bold uppercase tracking-[0.2em] text-[9px] pl-5 flex items-center gap-2">
+                    <Terminal size={10} /> Terminal Principal • {empresa.nombre}
                   </p>
                 </div>
-                <div className="flex gap-4 flex-wrap">
-                  <NeonButton onClick={() => setModalFiltros(true)} icon={Filter} label="FILTROS" variant="secondary" />
-                  <NeonButton onClick={() => setModalExportar(true)} icon={Download} label="EXPORTAR" variant="secondary" />
-                  <NeonButton onClick={() => abrir()} icon={Plus} label="NUEVA COTIZACIÓN" variant="primary" />
+                <div className="hidden sm:flex gap-3">
+                  <NeonButton onClick={() => setModalExportar(true)} icon={Download} label="Exportar" variant="secondary" />
+                  <NeonButton onClick={() => abrir()} icon={Plus} label="Nueva Cotización" variant="primary" />
                 </div>
-              </header>
+              </motion.header>
 
-              {/* Stats Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                <StatsCard
-                  icon={DollarSign}
-                  label="Ventas Totales"
-                  value={fmt(stats.totalVentas)}
-                  trend={{ value: 12.5, positive: true }}
-                  color="green"
-                />
-                <StatsCard
-                  icon={FileText}
-                  label="Cotizaciones"
-                  value={stats.totalCotizaciones}
-                  trend={{ value: 8.3, positive: true }}
-                  color="blue"
-                />
-                <StatsCard
-                  icon={Users}
-                  label="Clientes Activos"
-                  value={stats.totalClientes}
-                  trend={{ value: 15.7, positive: true }}
-                  color="purple"
-                />
-                <StatsCard
-                  icon={TrendingUp}
-                  label="Ventas del Mes"
-                  value={fmt(stats.ventasMes)}
-                  trend={{ value: 23.4, positive: true }}
-                  color="orange"
-                />
-              </div>
+              {/* Stats */}
+              <motion.div variants={containerVariants} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
+                <StatsCard icon={DollarSign} label="Total Ventas" value={fmt(stats.totalVentas)} color="green" />
+                <StatsCard icon={FileText} label="Cotizaciones" value={stats.totalCotizaciones} color="blue" />
+                <StatsCard icon={Users} label="Clientes" value={stats.totalClientes} color="purple" />
+                <StatsCard icon={Activity} label="Ventas 30D" value={fmt(stats.ventasMes)} color="red" />
+              </motion.div>
 
-              {/* Quick Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                <GlassCard className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-blue-600/20 rounded-xl flex items-center justify-center">
-                      <Calendar size={24} className="text-blue-500" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-neutral-500 font-bold uppercase">Este Mes</p>
-                      <h3 className="text-2xl font-black text-white">{stats.cotizacionesMes} Cotizaciones</h3>
-                    </div>
-                  </div>
-                </GlassCard>
-
-                <GlassCard className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-green-600/20 rounded-xl flex items-center justify-center">
-                      <Users size={24} className="text-green-500" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-neutral-500 font-bold uppercase">Clientes Nuevos</p>
-                      <h3 className="text-2xl font-black text-white">{stats.clientesNuevosMes} Este Mes</h3>
-                    </div>
-                  </div>
-                </GlassCard>
-
-                <GlassCard className="p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-purple-600/20 rounded-xl flex items-center justify-center">
-                      <Clock size={24} className="text-purple-500" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-neutral-500 font-bold uppercase">Pendientes</p>
-                      <h3 className="text-2xl font-black text-white">
-                        {stats.estadoCotizaciones.find(e => e.estado === 'pendiente')?.cantidad || 0}
-                      </h3>
-                    </div>
-                  </div>
-                </GlassCard>
-              </div>
-
-              {/* Search Bar */}
-              <div className="mb-6 flex flex-col md:flex-row gap-4">
-                <div className="flex-1">
-                  <div className="relative">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={18} />
-                    <input
-                      type="text"
-                      placeholder="Buscar por cliente, patente o vehículo..."
-                      value={busqueda}
-                      onChange={e => setBusqueda(e.target.value)}
-                      className="w-full bg-neutral-900/50 border border-white/10 rounded-xl pl-12 pr-4 py-3 text-sm text-white placeholder-neutral-600 focus:border-red-500/50 focus:ring-0 outline-none"
-                    />
-                  </div>
+              {/* Search & Filter */}
+              <motion.div variants={itemVariants} className="mb-6 flex flex-col sm:flex-row gap-3">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-600" size={16} />
+                  <input type="text" placeholder="Buscar por cliente, patente o vehículo..." value={busqueda} onChange={e => setBusqueda(e.target.value)}
+                    className="w-full bg-neutral-950 border border-neutral-800 pl-10 pr-4 py-3 text-sm font-mono text-white placeholder-neutral-600 focus:border-red-500 outline-none transition-all" />
                 </div>
-                <div className="flex gap-3">
-                  <select
-                    value={filtroEstado}
-                    onChange={e => setFiltroEstado(e.target.value)}
-                    className="bg-neutral-900/50 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-red-500/50 focus:ring-0 outline-none"
-                  >
-                    <option value="todos">Todos los estados</option>
-                    <option value="pendiente">Pendiente</option>
-                    <option value="aprobada">Aprobada</option>
-                    <option value="en_proceso">En Proceso</option>
-                    <option value="completada">Completada</option>
-                    <option value="rechazada">Rechazada</option>
-                  </select>
-
-                  <button
-                    onClick={() => {
-                      setFiltroEstado('todos');
-                      setFiltroFecha('todos');
-                      setFiltroTipoVehiculo('todos');
-                      setBusqueda('');
-                    }}
-                    className="px-4 py-3 bg-neutral-900/50 border border-white/10 rounded-xl text-sm text-neutral-400 hover:text-white hover:border-white/20 transition-colors"
-                  >
+                <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)}
+                  className="bg-neutral-950 border border-neutral-800 px-4 py-3 text-sm font-mono text-white focus:border-red-500 outline-none cursor-pointer">
+                  <option value="todos">Todos los estados</option>
+                  <option value="pendiente">Pendiente</option>
+                  <option value="aprobada">Aprobada</option>
+                  <option value="en_proceso">En proceso</option>
+                  <option value="completada">Completada</option>
+                  <option value="rechazada">Rechazada</option>
+                </select>
+                {(filtroEstado !== 'todos' || busqueda !== '') && (
+                  <button onClick={() => { setFiltroEstado('todos'); setBusqueda(''); }}
+                    className="px-4 py-3 bg-neutral-900 border border-neutral-700 text-xs uppercase tracking-widest font-bold text-neutral-400 hover:text-white hover:bg-neutral-800 transition-colors whitespace-nowrap">
                     Limpiar
                   </button>
-                </div>
-              </div>
+                )}
+              </motion.div>
 
-              {/* Cotizaciones List */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between px-2">
-                  <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                    <History className="text-red-600" />
-                    COTIZACIONES RECIENTES
-                    <span className="text-sm text-neutral-500 font-normal">
-                      ({historialFiltrado.length})
-                    </span>
-                  </h3>
-                  <button
-                    onClick={cargarHistorial}
-                    className="text-neutral-500 hover:text-white transition-colors"
-                    disabled={loadingData}
-                  >
-                    <Loader2 size={18} className={loadingData ? "animate-spin" : ""} />
-                  </button>
-                </div>
+              {/* List header */}
+              <motion.div variants={itemVariants} className="flex items-center justify-between mb-4 px-1">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-red-500 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-red-500 animate-pulse rounded-full" />
+                  Registro de Operaciones
+                  <span className="text-neutral-500 font-mono bg-neutral-900 px-2 py-0.5 text-[10px] border border-neutral-800 ml-1">
+                    {historialFiltrado.length}
+                  </span>
+                </h3>
+                <button onClick={cargarHistorial} disabled={loadingData} className="p-2 text-neutral-500 hover:text-red-400 transition-colors">
+                  <Loader2 size={14} className={loadingData ? "animate-spin text-red-500" : ""} />
+                </button>
+              </motion.div>
 
-                <div className="grid gap-3">
+              {/* Cotizaciones */}
+              <div className="space-y-3">
+                <AnimatePresence>
                   {historialFiltrado.map((cot, i) => {
-                    const estadoColors = {
-                      pendiente: 'bg-yellow-600/20 text-yellow-500 border-yellow-600/30',
-                      aprobada: 'bg-green-600/20 text-green-500 border-green-600/30',
-                      rechazada: 'bg-red-600/20 text-red-500 border-red-600/30',
-                      en_proceso: 'bg-blue-600/20 text-blue-500 border-blue-600/30',
-                      completada: 'bg-purple-600/20 text-purple-500 border-purple-600/30'
+                    const estadoColors: Record<string, string> = {
+                      pendiente: 'text-yellow-500 border-yellow-500/30 bg-yellow-500/10',
+                      aprobada: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10',
+                      rechazada: 'text-rose-500 border-rose-500/30 bg-rose-500/10',
+                      en_proceso: 'text-blue-400 border-blue-500/30 bg-blue-500/10',
+                      completada: 'text-purple-400 border-purple-500/30 bg-purple-500/10'
                     };
-                    const estadoLabel = {
-                      pendiente: 'Pendiente',
-                      aprobada: 'Aprobada',
-                      rechazada: 'Rechazada',
-                      en_proceso: 'En Proceso',
-                      completada: 'Completada'
-                    };
+                    const ec = estadoColors[cot.estado] || estadoColors.pendiente;
 
                     return (
-                      <motion.div
-                        key={cot.id_firebase}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: Math.min(i * 0.03, 0.3) }}
-                        className="group bg-neutral-900/40 border border-white/5 hover:border-red-600/50 hover:bg-white/5 p-5 rounded-2xl cursor-pointer transition-all duration-300"
-                      >
-                        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                          <div className="flex items-center gap-6 flex-1">
-                            <div className="h-14 w-14 bg-neutral-950 rounded-xl flex flex-col items-center justify-center border border-white/10 group-hover:border-red-600/30 transition-colors">
-                              <span className="text-[9px] text-neutral-500 font-bold uppercase">
-                                {cot.fecha.split('-')[1]}
-                              </span>
-                              <span className="text-xl font-black text-white">
-                                {cot.fecha.split('-')[2]}
-                              </span>
-                            </div>
+                      <motion.div key={cot.id_firebase} layout
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ delay: Math.min(i * 0.04, 0.15) }}
+                        className="group bg-black/40 border border-neutral-800 hover:border-red-600/40 p-4 sm:p-5 transition-all duration-300 relative overflow-hidden"
+                        style={{ clipPath: 'polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)' }}>
+                        <div className="absolute top-0 left-0 w-full h-px bg-red-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
 
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <h4 className="text-white font-bold text-lg group-hover:text-red-500 transition-colors">
-                                  {cot.cliente}
-                                </h4>
-                                <span className={`text-[10px] font-bold px-3 py-1 rounded-full border ${estadoColors[cot.estado || 'pendiente']}`}>
-                                  {estadoLabel[cot.estado || 'pendiente']}
-                                </span>
+                        {/* Mobile layout */}
+                        <div className="flex items-start gap-3 sm:hidden">
+                          <div className="shrink-0 w-12 h-12 bg-neutral-950 flex flex-col items-center justify-center border border-neutral-800 group-hover:border-red-500/30 transition-colors">
+                            <span className="text-[8px] text-red-500/70 font-bold uppercase font-mono">{cot.fecha.split('-')[1]}</span>
+                            <span className="text-lg font-black text-white font-mono">{cot.fecha.split('-')[2]}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                              <h4 className="text-white font-bold text-sm truncate">{cot.cliente}</h4>
+                              <span className={`text-[8px] font-black uppercase px-2 py-0.5 border shrink-0 ${ec}`}>{cot.estado.replace('_', ' ')}</span>
+                            </div>
+                            <p className="text-neutral-500 text-xs mb-1 truncate"><Car size={10} className="inline mr-1" />{cot.vehiculo}</p>
+                            <div className="flex items-center justify-between">
+                              <span className="bg-neutral-900 px-2 py-0.5 text-neutral-300 font-bold tracking-widest text-[10px] border border-neutral-800">{cot.patente}</span>
+                              <span className="text-white font-black font-mono text-sm">{fmt(cot.totalFinal)}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Mobile actions */}
+                        <div className="flex gap-2 mt-3 sm:hidden border-t border-neutral-800 pt-3">
+                          <button onClick={() => setModalDetalle({ isOpen: true, cotizacion: cot })} className="flex-1 py-2 bg-neutral-900 border border-neutral-700 text-neutral-400 hover:text-blue-400 hover:border-blue-500 transition-all text-xs flex items-center justify-center gap-1">
+                            <Eye size={12} /> Ver
+                          </button>
+                          <button onClick={() => abrir(cot)} className="flex-1 py-2 bg-neutral-900 border border-neutral-700 text-neutral-400 hover:text-red-400 hover:border-red-500 transition-all text-xs flex items-center justify-center gap-1">
+                            <Edit2 size={12} /> Editar
+                          </button>
+                          <button onClick={() => descargarPDFDesdeLista(cot)} className="flex-1 py-2 bg-neutral-900 border border-neutral-700 text-neutral-400 hover:text-emerald-400 hover:border-emerald-500 transition-all text-xs flex items-center justify-center gap-1">
+                            <Download size={12} /> PDF
+                          </button>
+                        </div>
+
+                        {/* Desktop layout */}
+                        <div className="hidden sm:flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-4 flex-1 min-w-0">
+                            <div className="shrink-0 w-14 h-14 bg-neutral-950 flex flex-col items-center justify-center border border-neutral-800 group-hover:border-red-500/30 transition-colors"
+                              style={{ clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)' }}>
+                              <span className="text-[8px] text-red-500/70 font-bold uppercase font-mono">{cot.fecha.split('-')[1]}</span>
+                              <span className="text-xl font-black text-white font-mono">{cot.fecha.split('-')[2]}</span>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-3 mb-1.5 flex-wrap">
+                                <h4 className="text-white font-bold text-base group-hover:text-red-400 transition-colors">{cot.cliente}</h4>
+                                <span className={`text-[8px] font-black uppercase px-2 py-0.5 border ${ec}`}>{cot.estado.replace('_', ' ')}</span>
                               </div>
-                              <div className="flex items-center gap-4 text-xs text-neutral-500">
-                                <span className="flex items-center gap-1">
-                                  <Car size={12} />
-                                  {cot.vehiculo}
-                                </span>
-                                <span className="font-mono text-neutral-300">{cot.patente}</span>
-                                <span className="text-neutral-600">•</span>
-                                <span className="text-neutral-400">{cot.numeroCotizacion}</span>
+                              <div className="flex items-center gap-3 text-[11px] text-neutral-400 flex-wrap">
+                                <span className="flex items-center gap-1"><Car size={12} className="text-red-900 group-hover:text-red-500 transition-colors" /> {cot.vehiculo}</span>
+                                <span className="bg-neutral-900 px-2 py-0.5 border border-neutral-800 text-neutral-300 font-bold tracking-widest">{cot.patente}</span>
+                                <span className="font-mono text-neutral-600">{cot.numeroCotizacion}</span>
                               </div>
                             </div>
                           </div>
-
-                          <div className="flex items-center gap-6 w-full lg:w-auto">
-                            <div className="text-right flex-1 lg:flex-none">
-                              <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider mb-1">
-                                Monto Total
-                              </p>
-                              <p className="text-2xl font-black text-white font-mono">
-                                {fmt(cot.totalFinal)}
-                              </p>
+                          <div className="flex items-center gap-6 shrink-0">
+                            <div className="text-right">
+                              <p className="text-[9px] text-neutral-500 font-mono uppercase tracking-wider mb-0.5">Total</p>
+                              <p className="text-xl font-black text-white font-mono">{fmt(cot.totalFinal)}</p>
                             </div>
-
-                            <div className="flex gap-2">
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setModalDetalle({ isOpen: true, cotizacion: cot });
-                                }}
-                                className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center text-neutral-400 hover:bg-blue-600 hover:text-white transition-all"
-                              >
-                                <Eye size={18} />
-                              </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  abrir(cot);
-                                }}
-                                className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center text-neutral-400 hover:bg-red-600 hover:text-white transition-all"
-                              >
-                                <Edit2 size={18} />
-                              </button>
+                            <div className="flex gap-1.5">
+                              {[
+                                { icon: Eye, action: () => setModalDetalle({ isOpen: true, cotizacion: cot }), hover: 'hover:bg-blue-900/30 hover:border-blue-500 hover:text-blue-400' },
+                                { icon: Edit2, action: () => abrir(cot), hover: 'hover:bg-red-900/30 hover:border-red-500 hover:text-red-400' },
+                                { icon: Download, action: () => descargarPDFDesdeLista(cot), hover: 'hover:bg-emerald-900/30 hover:border-emerald-500 hover:text-emerald-400' },
+                              ].map((btn, bi) => (
+                                <motion.button key={bi} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={(e) => { e.stopPropagation(); btn.action(); }}
+                                  className={`h-9 w-9 bg-neutral-900 border border-neutral-700 flex items-center justify-center text-neutral-400 transition-all ${btn.hover}`}
+                                  style={{ clipPath: 'polygon(3px 0, 100% 0, 100% calc(100% - 3px), calc(100% - 3px) 100%, 0 100%, 0 3px)' }}>
+                                  <btn.icon size={14} />
+                                </motion.button>
+                              ))}
                             </div>
                           </div>
                         </div>
                       </motion.div>
                     );
                   })}
+                </AnimatePresence>
 
-                  {historialFiltrado.length === 0 && !loadingData && (
-                    <div className="text-center py-20">
-                      <FileText size={48} className="text-neutral-700 mx-auto mb-4" />
-                      <p className="text-neutral-600 font-mono">
-                        {busqueda || filtroEstado !== 'todos'
-                          ? 'No se encontraron cotizaciones con los filtros aplicados'
-                          : 'No hay cotizaciones registradas'}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                {historialFiltrado.length === 0 && !loadingData && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                    className="text-center py-16 bg-neutral-900/20 border border-neutral-800 border-dashed"
+                    style={{ clipPath: 'polygon(16px 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%, 0 16px)' }}>
+                    <Terminal size={40} className="text-neutral-800 mx-auto mb-3" />
+                    <p className="text-neutral-600 font-mono uppercase tracking-widest text-xs">[ Sin resultados ]</p>
+                  </motion.div>
+                )}
               </div>
             </motion.div>
           )}
 
-          {/* CLIENTES VIEW */}
-          {vista === 'clientes' && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="max-w-[1800px] mx-auto p-8"
-            >
-              <header className="flex justify-between items-end gap-8 mb-12">
-                <div>
-                  <h1 className="text-5xl font-black text-white tracking-tighter mb-2">
-                    GESTIÓN DE <span className="text-red-600">CLIENTES</span>
-                  </h1>
-                  <p className="text-neutral-500 font-mono text-xs">
-                    Base de datos completa • {stats.totalClientes} clientes registrados
-                  </p>
-                </div>
-                <NeonButton onClick={() => setModalCliente({ isOpen: true })} icon={Plus} label="NUEVO CLIENTE" variant="primary" />
-              </header>
-
-              <div className="text-center py-20">
-                <Users size={64} className="text-neutral-700 mx-auto mb-4" />
-                <h3 className="text-xl font-bold text-white mb-2">Módulo de Clientes</h3>
-                <p className="text-neutral-500">Esta sección está en desarrollo • Próximamente CRUD completo</p>
-              </div>
-            </motion.div>
-          )}
-
-          {/* ANALYTICS VIEW */}
-          {vista === 'analytics' && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="max-w-[1800px] mx-auto p-8"
-            >
-              <header className="mb-12">
-                <h1 className="text-5xl font-black text-white tracking-tighter mb-2">
-                  ANALYTICS & <span className="text-red-600">REPORTES</span>
-                </h1>
-                <p className="text-neutral-500 font-mono text-xs">
-                  Análisis avanzado de rendimiento del negocio
-                </p>
-              </header>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                {/* Servicios más vendidos */}
-                <GlassCard className="p-6">
-                  <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                    <Package className="text-red-600" />
-                    Servicios Más Vendidos
-                  </h3>
-                  <div className="space-y-4">
-                    {stats.serviciosMasVendidos.slice(0, 5).map((servicio, i) => {
-                      const categoriaLabels: { [key: string]: { label: string; icon: React.ElementType; color: string } } = {
-                        mecanica: { label: 'Mecánica', icon: Wrench, color: 'bg-blue-600' },
-                        desabolladura: { label: 'Desabolladura', icon: Car, color: 'bg-green-600' },
-                        pintura: { label: 'Pintura', icon: Palette, color: 'bg-purple-600' },
-                        repuestos: { label: 'Repuestos', icon: Package, color: 'bg-orange-600' },
-                        otros: { label: 'Otros', icon: Settings, color: 'bg-neutral-600' }
-                      };
-                      const catInfo = categoriaLabels[servicio.categoria] || categoriaLabels.otros;
-                      const Icon = catInfo.icon;
-
-                      return (
-                        <div key={i} className="flex items-center gap-4">
-                          <div className={`w-10 h-10 ${catInfo.color} rounded-lg flex items-center justify-center`}>
-                            <Icon size={18} className="text-white" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex justify-between mb-1">
-                              <span className="text-sm font-bold text-white">{catInfo.label}</span>
-                              <span className="text-sm font-mono text-neutral-400">{fmt(servicio.total)}</span>
-                            </div>
-                            <div className="h-2 bg-neutral-800 rounded-full overflow-hidden">
-                              <div
-                                className={`h-full ${catInfo.color}`}
-                                style={{ width: `${(servicio.total / stats.serviciosMasVendidos[0].total) * 100}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </GlassCard>
-
-                {/* Tipos de vehículos */}
-                <GlassCard className="p-6">
-                  <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                    <Car className="text-red-600" />
-                    Vehículos Más Atendidos
-                  </h3>
-                  <div className="space-y-4">
-                    {stats.vehiculosMasAtendidos.slice(0, 5).map((vehiculo, i) => {
-                      const tipoLabels: { [key: string]: string } = {
-                        auto: 'Automóvil',
-                        camioneta: 'Camioneta',
-                        suv: 'SUV',
-                        moto: 'Motocicleta',
-                        camion: 'Camión',
-                        otro: 'Otro'
-                      };
-
-                      return (
-                        <div key={i} className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-red-600/20 rounded-lg flex items-center justify-center">
-                              <span className="text-xs font-black text-red-500">{i + 1}</span>
-                            </div>
-                            <span className="text-sm font-bold text-white">
-                              {tipoLabels[vehiculo.tipo] || vehiculo.tipo}
-                            </span>
-                          </div>
-                          <span className="text-2xl font-black text-neutral-300">{vehiculo.cantidad}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </GlassCard>
-
-                {/* Estados */}
-                <GlassCard className="p-6 lg:col-span-2">
-                  <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                    <PieChart className="text-red-600" />
-                    Estado de Cotizaciones
-                  </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    {stats.estadoCotizaciones.map((estado, i) => {
-                      const estadoConfig: { [key: string]: { label: string; color: string; bgColor: string } } = {
-                        pendiente: { label: 'Pendientes', color: 'text-yellow-500', bgColor: 'bg-yellow-600' },
-                        aprobada: { label: 'Aprobadas', color: 'text-green-500', bgColor: 'bg-green-600' },
-                        rechazada: { label: 'Rechazadas', color: 'text-red-500', bgColor: 'bg-red-600' },
-                        en_proceso: { label: 'En Proceso', color: 'text-blue-500', bgColor: 'bg-blue-600' },
-                        completada: { label: 'Completadas', color: 'text-purple-500', bgColor: 'bg-purple-600' }
-                      };
-                      const config = estadoConfig[estado.estado] || estadoConfig.pendiente;
-
-                      return (
-                        <div key={i} className="text-center">
-                          <div className={`w-20 h-20 ${config.bgColor} rounded-2xl mx-auto mb-3 flex items-center justify-center`}>
-                            <span className="text-3xl font-black text-white">{estado.cantidad}</span>
-                          </div>
-                          <p className={`text-xs font-bold uppercase ${config.color}`}>{config.label}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </GlassCard>
-              </div>
-            </motion.div>
-          )}
-
-          {/* EDITOR VIEW COMPLETO */}
+          {/* ======================== EDITOR ======================== */}
           {vista === 'editor' && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="min-h-screen bg-[#0a0a0a] print:bg-white pb-20 overflow-x-hidden" // Added overflow-x-hidden to prevent body scroll
-            >
-              {/* Floating Command Bar - Responsive Adjustments */}
-              <div className="fixed top-4 md:top-6 left-1/2 -translate-x-1/2 z-40 bg-black/90 backdrop-blur-2xl border border-white/10 p-2 rounded-2xl flex items-center justify-between gap-2 shadow-2xl print:hidden w-[95%] md:w-auto overflow-x-auto">
-                <button onClick={() => setVista('dashboard')} className="p-3 hover:bg-white/10 rounded-xl text-neutral-400 hover:text-white transition-colors shrink-0">
-                  <ArrowLeft size={20} />
+            <motion.div key="editor" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
+              className="min-h-screen pb-24 relative">
+
+              {/* Floating Command Bar */}
+              <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                className="fixed top-14 lg:top-4 left-1/2 -translate-x-1/2 z-50 bg-black/90 backdrop-blur-xl border border-red-900/50 px-2 py-1.5 flex items-center gap-1.5 shadow-[0_10px_40px_rgba(220,38,38,0.15)] w-[95%] sm:w-auto max-w-[600px]"
+                style={{ clipPath: 'polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)' }}>
+
+                <button onClick={() => setVista('dashboard')} className="p-2.5 bg-neutral-900 hover:bg-neutral-800 text-neutral-400 hover:text-white transition-colors shrink-0">
+                  <ArrowLeft size={16} />
                 </button>
 
-                <div className="w-px h-8 bg-white/10 mx-2 shrink-0" />
+                <div className="w-px h-5 bg-red-900/50 mx-1 shrink-0" />
 
-                <button onClick={guardar} disabled={loadingData} className="flex items-center gap-2 px-4 md:px-6 py-3 bg-white text-black rounded-xl font-bold text-[10px] md:text-xs uppercase tracking-widest hover:bg-neutral-200 transition-colors disabled:opacity-50 shrink-0 whitespace-nowrap">
-                  {loadingData ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
-                  {idFirebase ? 'ACTUALIZAR' : 'GUARDAR'}
+                <button onClick={() => guardar()} disabled={loadingData}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-600 to-red-800 text-white font-black text-[10px] uppercase tracking-[0.15em] hover:shadow-[0_0_15px_rgba(220,38,38,0.5)] transition-all disabled:opacity-50 shrink-0">
+                  {loadingData ? <Loader2 className="animate-spin" size={12} /> : <Save size={12} />}
+                  <span className="hidden sm:inline">{idFirebase ? 'Actualizar' : 'Guardar'}</span>
                 </button>
 
                 <AnimatePresence>
                   {!idFirebase && autoSaved && (
                     <motion.div initial={{ width: 0, opacity: 0 }} animate={{ width: 'auto', opacity: 1 }} exit={{ width: 0, opacity: 0 }} className="overflow-hidden hidden sm:block">
-                      <div className="flex items-center gap-1 text-green-500 text-[10px] font-bold px-3 uppercase tracking-wider whitespace-nowrap">
-                        <CheckCircle2 size={12} /> Guardado Local
+                      <div className="flex items-center gap-1 text-emerald-400 text-[9px] font-mono font-bold px-3 py-1.5 uppercase tracking-widest bg-emerald-950/30 border border-emerald-900/50 whitespace-nowrap">
+                        <CheckCircle2 size={10} /> Borrador guardado
                       </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                <div className="w-px h-8 bg-white/10 mx-2 shrink-0" />
+                <div className="flex-1" />
 
-                <button onClick={() => window.print()} className="p-3 hover:bg-white/10 rounded-xl text-neutral-400 hover:text-white transition-colors shrink-0">
-                  <Printer size={20} />
+                <button onClick={() => descargarPDF()} title="Descargar PDF"
+                  className="p-2.5 bg-neutral-900 hover:bg-emerald-950 text-neutral-400 hover:text-emerald-400 transition-colors shrink-0 border border-transparent hover:border-emerald-900/50">
+                  <FileDown size={16} />
                 </button>
 
                 {idFirebase && (
-                  <button onClick={() => eliminar(idFirebase!)} className="p-3 hover:bg-red-900/20 rounded-xl text-neutral-400 hover:text-red-500 transition-colors shrink-0">
-                    <Trash2 size={20} />
+                  <button onClick={() => eliminar(idFirebase)}
+                    className="p-2.5 bg-neutral-900 hover:bg-rose-950 text-neutral-400 hover:text-rose-500 transition-colors shrink-0 border border-transparent hover:border-rose-900/50">
+                    <Trash2 size={16} />
                   </button>
                 )}
-              </div>
+              </motion.div>
 
-              <div className="h-24 print:hidden"></div>
+              {/* Spacer */}
+              <div className="h-24 lg:h-20" />
 
-              {/* DOCUMENTO COMPLETO - Responsive Wrapper */}
-              <div className="w-full md:max-w-[21cm] mx-auto bg-neutral-900 min-h-[29.7cm] shadow-2xl print:shadow-none relative text-white print:bg-white print:text-black transition-all">
+              <div className="max-w-[1100px] mx-auto px-4 sm:px-6 lg:px-8">
 
-                {/* Header Premium - Stacked on mobile */}
-                <div className="px-4 py-6 md:px-8 md:py-8 print:px-6 print:py-6 border-b-2 border-red-600 print:border-black flex flex-col md:flex-row justify-between items-center md:items-start relative overflow-hidden gap-6 md:gap-0">
-                  <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-red-600/10 rounded-full blur-[80px] pointer-events-none print:hidden"></div>
-
-                  <div className="flex flex-col gap-4 relative z-10 w-full md:w-auto items-center md:items-start text-center md:text-left">
-                    <div className="w-48 bg-black/50 p-3 rounded-xl border border-white/10 print:bg-transparent print:border-none">
-                      <div className="w-full h-16 bg-neutral-800 rounded flex items-center justify-center print:bg-transparent">
-                        <span className="text-xs font-bold text-white print:text-black">{empresa.nombre}</span>
-                      </div>
-                    </div>
-                    <div className="text-[10px] text-neutral-400 font-medium space-y-1 ml-1 print:text-neutral-600 flex flex-col items-center md:items-start">
-                      <p className="flex items-center gap-2"><Building2 size={10} className="text-red-600 print:text-black" /> {empresa.direccion}</p>
-                      <p className="flex items-center gap-2"><Hash size={10} className="text-red-600 print:text-black" /> RUT: {empresa.rut}</p>
-                      <p className="flex items-center gap-2"><Zap size={10} className="text-red-600 print:text-black" /> {empresa.web}</p>
-                    </div>
+                {/* Doc header */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 pb-4 border-b border-red-900/30">
+                  <div>
+                    <h2 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tighter">Panel de Emisión</h2>
+                    <p className="text-neutral-500 font-mono text-xs uppercase tracking-widest mt-0.5">Cotización #{numeroCotizacion}</p>
                   </div>
-
-                  <div className="text-center md:text-right relative z-10 w-full md:w-auto">
-                    <h1 className="text-3xl md:text-4xl font-black text-white tracking-tighter print:text-black">COTIZACIÓN</h1>
-                    <p className="text-xs font-bold text-red-600 print:text-black uppercase tracking-[0.3em] mb-4">
-                      {empresa.nombre.toUpperCase()}
-                    </p>
-
-                    <div className="inline-flex flex-col items-center md:items-end gap-2 bg-neutral-800/50 print:bg-transparent p-4 rounded-lg border border-white/10 print:border print:border-neutral-300 w-full md:w-auto">
-                      <div className="flex items-center justify-between md:justify-end gap-3 w-full">
-                        <span className="text-[10px] font-bold text-neutral-400 print:text-neutral-600 uppercase tracking-wider">N°</span>
-                        <input
-                          value={numeroCotizacion}
-                          onChange={e => setNumeroCotizacion(e.target.value)}
-                          className="text-right text-xl font-black text-red-500 print:text-black w-32 border-none bg-transparent p-0 focus:ring-0"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between md:justify-end gap-3 w-full">
-                        <span className="text-[10px] font-bold text-neutral-400 print:text-neutral-600 uppercase tracking-wider">Fecha</span>
-                        <input
-                          type="date"
-                          value={fecha}
-                          onChange={e => setFecha(e.target.value)}
-                          className="text-right text-sm font-bold text-neutral-300 print:text-black border-none bg-transparent p-0 focus:ring-0 [color-scheme:dark] print:[color-scheme:light]"
-                        />
-                      </div>
-                      <div className="flex items-center justify-between md:justify-end gap-3 print:hidden w-full">
-                        <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Estado</span>
-                        <select
-                          value={estadoCotizacion}
-                          onChange={e => setEstadoCotizacion(e.target.value as CotizacionData['estado'])}
-                          className="text-right text-xs font-bold bg-neutral-900 border border-neutral-700 rounded px-2 py-1 text-white focus:ring-0"
-                        >
-                          <option value="pendiente">Pendiente</option>
-                          <option value="aprobada">Aprobada</option>
-                          <option value="en_proceso">En Proceso</option>
-                          <option value="completada">Completada</option>
-                          <option value="rechazada">Rechazada</option>
-                        </select>
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <label className="text-[9px] text-red-500/80 font-mono uppercase tracking-wider">Fecha</label>
+                    <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
+                      className="bg-neutral-950 border border-neutral-700 text-white px-3 py-2 text-sm outline-none focus:border-red-500 transition-colors" />
                   </div>
                 </div>
 
-                {/* Body */}
-                <div className="p-4 md:p-8 print:p-6">
-                  {/* Tarjetas de Datos - Stacked on Mobile */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-
-                    {/* === CLIENTE === */}
-                    <div className="bg-neutral-800/50 p-5 rounded-xl border border-white/5 print:bg-transparent print:border print:border-neutral-200">
-                      <h3 className="text-[10px] font-black text-red-600 print:text-black uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <Users size={12} /> Información del Cliente
+                {/* Cliente + Vehículo */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-6">
+                  {[
+                    {
+                      title: 'TARGET_INFO', icon: Users,
+                      fields: [
+                        { label: 'Nombre / Razón Social', value: cliente, setter: setCliente, placeholder: 'Nombre del cliente...', full: true, mono: false },
+                        { label: 'RUT', value: rutCliente, setter: setRutCliente, placeholder: '12.345.678-9', mono: true },
+                        { label: 'Teléfono', value: telefonoCliente, setter: setTelefonoCliente, placeholder: '+56 9...', mono: true },
+                      ]
+                    },
+                    {
+                      title: 'ASSET_DATA', icon: Car,
+                      fields: [
+                        { label: 'Marca / Modelo', value: vehiculo, setter: setVehiculo, placeholder: 'Ej: Suzuki Alto 800cc...', full: true, mono: false },
+                        { label: 'Patente', value: patente, setter: (v: string) => setPatente(v.toUpperCase()), placeholder: 'XXXX-00', mono: true, upper: true },
+                        { label: 'Año', value: anioVehiculo, setter: setAnioVehiculo, placeholder: '2024', mono: true },
+                      ]
+                    }
+                  ].map((section, si) => (
+                    <div key={si} className="p-5 sm:p-7 border border-neutral-800 bg-black/40 relative"
+                      style={{ clipPath: 'polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px)' }}>
+                      <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-red-500/40 pointer-events-none" />
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.3em] mb-5 flex items-center gap-2 text-red-500 font-mono">
+                        <section.icon size={14} /> // {section.title}
                       </h3>
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         <div>
-                          <label className="text-[9px] font-bold text-neutral-500 print:text-neutral-600 uppercase block mb-1">
-                            Nombre / Razón Social *
-                          </label>
-                          <input
-                            value={cliente}
-                            onChange={e => setCliente(e.target.value)}
-                            className="w-full bg-neutral-900 print:bg-white border border-neutral-700 print:border-neutral-300 rounded px-3 py-2 text-sm font-bold text-white print:text-black focus:border-red-600 focus:ring-0 transition-colors"
-                            placeholder="Ingrese nombre completo"
-                            required
-                          />
+                          <label className="text-[9px] font-bold uppercase tracking-widest block mb-1.5 text-neutral-400">{section.fields[0].label}</label>
+                          <input value={section.fields[0].value} onChange={e => section.fields[0].setter(e.target.value)}
+                            className={`w-full bg-neutral-950/80 border border-neutral-700 p-3 text-base font-bold text-white placeholder:text-neutral-600 focus:bg-black focus:border-red-500 outline-none transition-all ${section.fields[0].mono ? 'font-mono' : ''}`}
+                            placeholder={section.fields[0].placeholder}
+                            style={{ clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)' }} />
                         </div>
                         <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-[9px] font-bold text-neutral-500 print:text-neutral-600 uppercase block mb-1">RUT *</label>
-                            <input
-                              value={rutCliente}
-                              onChange={e => setRutCliente(e.target.value)}
-                              className="w-full bg-neutral-900 print:bg-white border border-neutral-700 print:border-neutral-300 rounded px-3 py-2 text-sm font-medium text-neutral-300 print:text-black focus:border-red-600 focus:ring-0"
-                              placeholder="XX.XXX.XXX-X"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <label className="text-[9px] font-bold text-neutral-500 print:text-neutral-600 uppercase block mb-1">Teléfono</label>
-                            <input
-                              value={telefonoCliente}
-                              onChange={e => setTelefonoCliente(e.target.value)}
-                              className="w-full bg-neutral-900 print:bg-white border border-neutral-700 print:border-neutral-300 rounded px-3 py-2 text-sm font-medium text-neutral-300 print:text-black focus:border-red-600 focus:ring-0"
-                              placeholder="+56 9 XXXX XXXX"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <label className="text-[9px] font-bold text-neutral-500 print:text-neutral-600 uppercase block mb-1">Email</label>
-                          <input
-                            type="email"
-                            value={emailCliente}
-                            onChange={e => setEmailCliente(e.target.value)}
-                            className="w-full bg-neutral-900 print:bg-white border border-neutral-700 print:border-neutral-300 rounded px-3 py-2 text-sm font-medium text-neutral-300 print:text-black focus:border-red-600 focus:ring-0"
-                            placeholder="correo@ejemplo.com"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* === VEHÍCULO === */}
-                    <div className="bg-neutral-800/50 p-5 rounded-xl border border-white/5 print:bg-transparent print:border print:border-neutral-200">
-                      <h3 className="text-[10px] font-black text-red-600 print:text-black uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <Car size={12} /> Información del Vehículo
-                      </h3>
-                      <div className="space-y-3">
-                        {/* Marca/Modelo */}
-                        <div>
-                          <label className="text-[9px] font-bold text-neutral-500 print:text-neutral-600 uppercase block mb-1">
-                            Marca / Modelo *
-                          </label>
-                          <input
-                            value={vehiculo}
-                            onChange={e => setVehiculo(e.target.value)}
-                            className="w-full bg-neutral-900 print:bg-white border border-neutral-700 print:border-neutral-300 rounded px-3 py-2 text-sm font-bold text-white print:text-black focus:border-red-600 focus:ring-0"
-                            placeholder="Ej: Toyota Hilux 4x4"
-                            required
-                          />
-                        </div>
-
-                        {/* Año y Patente */}
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <label className="text-[9px] font-bold text-neutral-500 print:text-neutral-600 uppercase block mb-1">
-                              Año
-                            </label>
-                            <input
-                              value={anioVehiculo}
-                              onChange={e => setAnioVehiculo(e.target.value)}
-                              className="w-full bg-neutral-900 print:bg-white border border-neutral-700 print:border-neutral-300 rounded px-3 py-2 text-sm font-medium text-neutral-300 print:text-black focus:border-red-600 focus:ring-0"
-                              placeholder="2024"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-[9px] font-bold text-neutral-500 print:text-neutral-600 uppercase block mb-1">
-                              Patente *
-                            </label>
-                            <div className="flex gap-1.5">
-                              <input
-                                value={patente}
-                                onChange={e => setPatente(e.target.value.toUpperCase())}
-                                className="w-full bg-neutral-900 print:bg-white border border-neutral-700 print:border-neutral-300 rounded px-3 py-2 text-sm font-black text-white print:text-black focus:border-red-600 focus:ring-0 uppercase tracking-wider text-center"
-                                placeholder="XXXX-00"
-                                required
-                                style={{ minWidth: '0' }}
-                              />
-                              <a
-                                href="https://www.patentechile.com/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="bg-neutral-800 print:hidden w-9 h-9 rounded flex items-center justify-center text-neutral-500 hover:text-red-600 border border-neutral-700 shrink-0 flex-shrink-0"
-                                title="Buscar"
-                              >
-                                <Search size={14} />
-                              </a>
+                          {section.fields.slice(1).map((field, fi) => (
+                            <div key={fi}>
+                              <label className="text-[9px] font-bold uppercase tracking-widest block mb-1.5 text-neutral-400">{field.label}</label>
+                              <input value={field.value} onChange={e => field.setter(e.target.value)}
+                                className={`w-full bg-neutral-950/80 border border-neutral-700 p-3 text-sm font-mono text-white placeholder:text-neutral-600 focus:bg-black focus:border-red-500 outline-none transition-all ${field.upper ? 'uppercase font-black tracking-widest text-red-400' : ''}`}
+                                placeholder={field.placeholder}
+                                style={{ clipPath: 'polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px)' }} />
                             </div>
-                          </div>
-                        </div>
-
-                        {/* Tipo */}
-                        <div>
-                          <label className="text-[9px] font-bold text-neutral-500 print:text-neutral-600 uppercase block mb-1">
-                            Tipo de Vehículo
-                          </label>
-                          <select
-                            value={tipoVehiculo}
-                            onChange={e => setTipoVehiculo(e.target.value as CotizacionData['tipoVehiculo'])}
-                            className="w-full bg-neutral-900 print:bg-white border border-neutral-700 print:border-neutral-300 rounded px-3 py-2 text-sm font-medium text-neutral-300 print:text-black focus:border-red-600 focus:ring-0"
-                          >
-                            <option value="auto">Automóvil</option>
-                            <option value="camioneta">Camioneta</option>
-                            <option value="suv">SUV</option>
-                            <option value="moto">Motocicleta</option>
-                            <option value="camion">Camión</option>
-                            <option value="otro">Otro</option>
-                          </select>
+                          ))}
                         </div>
                       </div>
                     </div>
-                  </div>
+                  ))}
+                </div>
 
-                  {/* Tabla de Items - Responsive Scrolling Wrapper */}
-                  <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
-                    <table className="w-full mb-8 min-w-[600px] md:min-w-0">
-                      <div className="print:text-xs"></div>
-                      <thead>
-                        <tr className="border-b-2 border-neutral-800 print:border-black">
-                          <th className="py-3 text-left text-[10px] font-black uppercase text-neutral-500 print:text-black tracking-widest w-[40%]">
-                            Descripción del Servicio
-                          </th>
-                          <th className="py-3 text-center text-[10px] font-black uppercase text-neutral-500 print:text-black tracking-widest w-[15%]">
-                            Categoría
-                          </th>
-                          <th className="py-3 text-center text-[10px] font-black uppercase text-neutral-500 print:text-black tracking-widest w-[15%]">
-                            Precio Unit.
-                          </th>
-                          <th className="py-3 text-center text-[10px] font-black uppercase text-neutral-500 print:text-black tracking-widest w-[10%]">
-                            Cant.
-                          </th>
-                          <th className="py-3 text-right text-[10px] font-black uppercase text-neutral-500 print:text-black tracking-widest w-[15%]">
-                            Subtotal
-                          </th>
-                          <th className="w-10 print:hidden"></th>
+                {/* Items Table */}
+                <div className="mb-6 border border-neutral-800 bg-black/40 overflow-hidden"
+                  style={{ clipPath: 'polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px)' }}>
+
+                  {/* Desktop table */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <table className="w-full text-left border-collapse min-w-[700px]">
+                      <thead className="bg-neutral-900 border-b border-red-900/40">
+                        <tr>
+                          {['Descripción', 'Categoría', 'Valor Unit.', 'Cant.', 'Subtotal', ''].map((h, i) => (
+                            <th key={i} className={`py-3 px-4 text-[9px] font-mono font-black uppercase tracking-widest text-neutral-400 ${i === 4 ? 'text-right' : i === 3 ? 'text-center' : i === 5 ? 'w-10' : ''}`}>{h}</th>
+                          ))}
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-neutral-800 print:divide-neutral-200">
-                        {items.map((item) => (
-                          <tr key={item.id} className="group hover:bg-neutral-800/30 print:hover:bg-transparent transition-colors">
-                            <td className="py-3">
-                              <input
-                                value={item.descripcion}
-                                onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, descripcion: e.target.value } : i))}
-                                className="w-full font-medium text-sm border-none p-2 focus:ring-0 bg-transparent text-white print:text-black"
-                                placeholder="Describe el servicio realizado..."
-                              />
+                      <tbody className="divide-y divide-neutral-800/50">
+                        {items.map(item => (
+                          <tr key={item.id} className="hover:bg-neutral-900/40 transition-colors">
+                            <td className="py-3 px-4">
+                              <input value={item.descripcion} onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, descripcion: e.target.value } : i))}
+                                className="w-full bg-neutral-950/80 border border-neutral-800 p-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-red-500 outline-none transition-colors"
+                                placeholder="Descripción del servicio..." />
                             </td>
-                            <td className="py-3">
-                              <select
-                                value={item.categoria}
-                                onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, categoria: e.target.value as ItemCotizacion['categoria'] } : i))}
-                                className="w-full text-xs text-center border-none p-2 focus:ring-0 bg-neutral-900 print:bg-neutral-100 rounded text-neutral-300 print:text-black"
-                              >
-                                <option value="mecanica">Mecánica</option>
-                                <option value="desabolladura">Desabolladura</option>
-                                <option value="pintura">Pintura</option>
-                                <option value="repuestos">Repuestos</option>
-                                <option value="otros">Otros</option>
+                            <td className="py-3 px-4">
+                              <select value={item.categoria} onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, categoria: e.target.value } : i))}
+                                className="w-full bg-neutral-950/80 border border-neutral-800 p-2.5 text-xs font-mono text-neutral-300 focus:border-red-500 outline-none cursor-pointer">
+                                {['pintura', 'desabolladura', 'mecanica', 'repuestos', 'otros'].map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>)}
                               </select>
                             </td>
-                            <td className="py-3">
-                              <input
-                                type="number"
-                                value={item.precio}
-                                onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, precio: Number(e.target.value) } : i))}
-                                className="w-full font-mono text-sm text-center border-none p-2 focus:ring-0 bg-neutral-900 print:bg-neutral-100 rounded text-neutral-300 print:text-black"
-                              />
+                            <td className="py-3 px-4">
+                              <input type="number" value={item.precio || ''} onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, precio: Number(e.target.value) } : i))}
+                                className="w-full bg-neutral-950/80 border border-neutral-800 p-2.5 text-sm font-mono text-center text-white focus:border-red-500 outline-none"
+                                placeholder="0" />
                             </td>
-                            <td className="py-3">
-                              <input
-                                type="number"
-                                min="1"
-                                value={item.cantidad}
-                                onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, cantidad: Number(e.target.value) } : i))}
-                                className="w-full font-mono text-sm text-center border-none p-2 focus:ring-0 bg-transparent text-neutral-300 print:text-black"
-                              />
+                            <td className="py-3 px-4">
+                              <input type="number" min="1" value={item.cantidad} onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, cantidad: Number(e.target.value) } : i))}
+                                className="w-full bg-neutral-950/80 border border-neutral-800 p-2.5 text-sm font-mono text-center text-white focus:border-red-500 outline-none" />
                             </td>
-                            <td className="py-3 text-right font-bold font-mono text-sm text-white print:text-black pr-2">
-                              {fmt(item.precio * item.cantidad)}
-                            </td>
-                            <td className="print:hidden text-center">
-                              <button
-                                onClick={() => setItems(p => p.filter(i => i.id !== item.id))}
-                                disabled={items.length === 1}
-                                className="text-neutral-600 hover:text-red-500 transition-colors p-2 disabled:opacity-30 disabled:cursor-not-allowed"
-                              >
-                                <Trash2 size={16} />
+                            <td className="py-3 px-4 text-right font-mono font-bold text-red-400 whitespace-nowrap">{fmt(item.precio * item.cantidad)}</td>
+                            <td className="pr-3">
+                              <button onClick={() => setItems(p => p.filter(i => i.id !== item.id))} disabled={items.length === 1}
+                                className="text-neutral-600 hover:text-red-500 p-1.5 transition-colors disabled:opacity-20">
+                                <X size={16} />
                               </button>
                             </td>
                           </tr>
@@ -1463,195 +1231,284 @@ const App = () => {
                     </table>
                   </div>
 
-                  <button
-                    onClick={() => setItems([...items, { id: crypto.randomUUID(), descripcion: '', precio: 0, cantidad: 1, categoria: 'mecanica' }])}
-                    className="print:hidden flex items-center gap-2 text-[10px] font-bold text-red-600 hover:bg-red-600/10 px-4 py-3 rounded-lg transition-colors uppercase tracking-widest border border-red-600/30 mb-8"
-                  >
-                    <Plus size={14} /> Agregar Servicio
-                  </button>
-
-                  {/* Footer con Totales - Stacked on mobile */}
-                  <div className="flex flex-col md:flex-row items-start justify-between border-t border-neutral-800 print:border-neutral-200 pt-8 gap-8">
-                    <div className="w-full md:w-1/2">
-                      <p className="text-[10px] font-black text-neutral-500 print:text-neutral-600 uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <FileText size={12} className="text-red-600 print:text-black" /> Notas y Observaciones
-                      </p>
-                      <textarea
-                        value={notas}
-                        onChange={e => setNotas(e.target.value)}
-                        className="w-full bg-neutral-900 print:bg-white border border-neutral-700 print:border-neutral-300 rounded-lg p-4 text-xs text-neutral-400 print:text-black h-24 print:h-20 resize-none focus:border-red-600 focus:ring-0 outline-none"
-                        placeholder="Añade términos, condiciones o información adicional..."
-                      />
-                    </div>
-
-                    <div className="w-full md:w-1/3 space-y-4">
-                      <div className="space-y-3 bg-neutral-800/50 print:bg-transparent p-6 rounded-xl border border-white/5 print:border print:border-neutral-200">
-                        <div className="flex justify-between text-sm text-neutral-400 print:text-neutral-600">
-                          <span className="font-medium">Subtotal (Neto)</span>
-                          <span className="font-mono text-white print:text-black font-bold">{fmt(totales.sub)}</span>
+                  {/* Mobile items */}
+                  <div className="sm:hidden divide-y divide-neutral-800">
+                    {items.map((item, idx) => (
+                      <div key={item.id} className="p-4 space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-[9px] font-mono text-red-500 uppercase tracking-widest">Ítem {idx + 1}</span>
+                          <button onClick={() => setItems(p => p.filter(i => i.id !== item.id))} disabled={items.length === 1}
+                            className="text-neutral-600 hover:text-red-500 transition-colors disabled:opacity-20 p-1">
+                            <X size={14} />
+                          </button>
                         </div>
-                        <div className="flex justify-between text-sm text-neutral-400 print:text-neutral-600 border-b border-neutral-700 print:border-neutral-300 pb-3">
-                          <span className="font-medium">IVA (19%)</span>
-                          <span className="font-mono text-white print:text-black font-bold">{fmt(totales.iva)}</span>
-                        </div>
-                        <div className="flex justify-between items-center pt-2">
-                          <span className="text-base font-black uppercase text-white print:text-black">TOTAL A PAGAR</span>
-                          <span className="text-3xl font-black text-red-500 print:text-black tracking-tight leading-none">
-                            {fmt(totales.total)}
-                          </span>
+                        <input value={item.descripcion} onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, descripcion: e.target.value } : i))}
+                          className="w-full bg-neutral-950 border border-neutral-800 p-2.5 text-sm text-white placeholder:text-neutral-600 focus:border-red-500 outline-none"
+                          placeholder="Descripción..." />
+                        <div className="grid grid-cols-3 gap-2">
+                          <select value={item.categoria} onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, categoria: e.target.value } : i))}
+                            className="col-span-3 bg-neutral-950 border border-neutral-800 p-2 text-xs font-mono text-neutral-300 focus:border-red-500 outline-none">
+                            {['pintura', 'desabolladura', 'mecanica', 'repuestos', 'otros'].map(c => <option key={c} value={c}>{c}</option>)}
+                          </select>
+                          <div>
+                            <p className="text-[8px] text-neutral-500 mb-1 uppercase">Precio</p>
+                            <input type="number" value={item.precio || ''} onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, precio: Number(e.target.value) } : i))}
+                              className="w-full bg-neutral-950 border border-neutral-800 p-2 text-xs font-mono text-white focus:border-red-500 outline-none" placeholder="0" />
+                          </div>
+                          <div>
+                            <p className="text-[8px] text-neutral-500 mb-1 uppercase">Cant.</p>
+                            <input type="number" min="1" value={item.cantidad} onChange={e => setItems(p => p.map(i => i.id === item.id ? { ...i, cantidad: Number(e.target.value) } : i))}
+                              className="w-full bg-neutral-950 border border-neutral-800 p-2 text-xs font-mono text-white focus:border-red-500 outline-none" />
+                          </div>
+                          <div>
+                            <p className="text-[8px] text-neutral-500 mb-1 uppercase">Total</p>
+                            <p className="text-sm font-mono font-bold text-red-400 p-2">{fmt(item.precio * item.cantidad)}</p>
+                          </div>
                         </div>
                       </div>
+                    ))}
+                  </div>
 
-                      <div className="text-[9px] text-neutral-500 print:text-neutral-600 text-center space-y-1">
-                        <p className="font-bold">Métodos de pago aceptados</p>
-                        <p>Efectivo • Transferencia • Débito • Crédito</p>
-                      </div>
-                    </div>
+                  {/* Add item button */}
+                  <div className="bg-neutral-900/50 p-4 border-t border-neutral-800">
+                    <button onClick={() => setItems([...items, { id: crypto.randomUUID(), descripcion: '', precio: 0, cantidad: 1, categoria: 'pintura' }])}
+                      className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-red-500 hover:text-white hover:bg-red-600 px-5 py-2.5 transition-colors font-mono border border-red-900/50"
+                      style={{ clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)' }}>
+                      <Plus size={14} /> Añadir ítem
+                    </button>
                   </div>
                 </div>
 
-                {/* Footer del documento */}
-                <div className="px-10 py-6 border-t border-neutral-800 print:border-neutral-300 text-center">
-                  <p className="text-[10px] text-neutral-500 print:text-neutral-600">
-                    {empresa.nombre} • {empresa.direccion} • {empresa.telefono} • {empresa.web}
-                  </p>
-                  <p className="text-[9px] text-neutral-600 mt-1">
-                    Documento generado electrónicamente • Sistema Lions Cars Pro
-                  </p>
+                {/* Notas + Totales */}
+                <div className="flex flex-col lg:flex-row gap-5 mb-8">
+                  <div className="flex-1 p-5 sm:p-7 border border-neutral-800 bg-black/40 relative"
+                    style={{ clipPath: 'polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px)' }}>
+                    <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-red-500/40 pointer-events-none" />
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.3em] mb-4 flex items-center gap-2 text-red-500 font-mono">
+                      <Terminal size={14} /> // NOTAS
+                    </h3>
+                    <textarea value={notas} onChange={e => setNotas(e.target.value)}
+                      className="w-full h-28 bg-neutral-950/80 border border-neutral-700 p-4 text-xs font-mono text-neutral-300 focus:bg-black focus:border-red-500 outline-none resize-none transition-colors"
+                      placeholder="Garantías, condiciones, validez..."
+                      style={{ clipPath: 'polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px)' }} />
+                  </div>
+
+                  <div className="lg:w-[360px] p-5 sm:p-7 border border-red-900/50 shadow-[0_0_30px_rgba(220,38,38,0.08)] bg-neutral-950/80 relative"
+                    style={{ clipPath: 'polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)' }}>
+                    <div className="space-y-3 mb-5">
+                      <div className="flex justify-between font-mono text-sm text-neutral-400">
+                        <span>Subtotal Neto</span><span className="text-white font-bold">{fmt(totales.sub)}</span>
+                      </div>
+                      <div className="flex justify-between font-mono text-sm text-neutral-400 pb-4 border-b border-neutral-800">
+                        <span>IVA (19%)</span><span className="text-white font-bold">{fmt(totales.iva)}</span>
+                      </div>
+                    </div>
+                    <div className="text-right mb-6">
+                      <p className="text-[9px] font-black uppercase tracking-[0.4em] font-mono text-red-500 mb-1">[ VALOR FINAL ]</p>
+                      <p className="text-4xl sm:text-5xl font-black tracking-tighter font-mono text-white">{fmt(totales.total)}</p>
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold uppercase tracking-widest block mb-1.5 text-neutral-500">Estado del documento</label>
+                      <select value={estadoCotizacion} onChange={e => setEstadoCotizacion(e.target.value)}
+                        className="w-full bg-neutral-900 border border-neutral-700 p-3 text-sm font-bold uppercase tracking-wider text-white focus:border-red-500 outline-none cursor-pointer">
+                        <option value="pendiente">Pendiente</option>
+                        <option value="aprobada">Aprobada</option>
+                        <option value="en_proceso">En Proceso</option>
+                        <option value="completada">Completada</option>
+                        <option value="rechazada">Rechazada</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
           )}
+
+          {/* ======================== CLIENTES ======================== */}
+          {vista === 'clientes' && (
+            <motion.div key="clientes" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
+              className="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-10">
+              <header className="flex justify-between items-end gap-4 mb-8">
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="h-10 w-1.5 bg-gradient-to-b from-red-500 to-red-800" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 80%, 0 20%)' }} />
+                    <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tighter uppercase">Directorio</h1>
+                  </div>
+                  <p className="text-red-500 font-mono text-[9px] tracking-[0.3em] pl-4 uppercase">Base de datos • {stats.totalClientes} Entidades</p>
+                </div>
+                <NeonButton onClick={() => {}} icon={Plus} label="Nuevo" variant="primary" />
+              </header>
+              <div className="text-center py-24 bg-neutral-900/20 border border-red-900/20 border-dashed"
+                style={{ clipPath: 'polygon(20px 0, 100% 0, 100% calc(100% - 20px), calc(100% - 20px) 100%, 0 100%, 0 20px)' }}>
+                <Users size={48} className="text-red-900/30 mx-auto mb-4" />
+                <h3 className="text-xl font-black text-white mb-2 uppercase">Módulo en Construcción</h3>
+                <p className="text-neutral-500 font-mono text-xs tracking-widest">[ PRÓXIMAMENTE ]</p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ======================== ANALYTICS ======================== */}
+          {vista === 'analytics' && (
+            <motion.div key="analytics" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
+              className="max-w-[1600px] mx-auto p-4 sm:p-6 lg:p-10">
+              <header className="mb-8">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="h-10 w-1.5 bg-gradient-to-b from-red-500 to-red-800" style={{ clipPath: 'polygon(100% 0, 100% 100%, 0 80%, 0 20%)' }} />
+                  <h1 className="text-3xl sm:text-4xl font-black text-white tracking-tighter uppercase">Métricas</h1>
+                </div>
+                <p className="text-red-500 font-mono text-[9px] tracking-[0.3em] pl-4 uppercase">Análisis Telemetría • {empresa.nombre}</p>
+              </header>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {/* Servicios */}
+                <GlassCard className="p-6">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] font-mono text-red-500 mb-6 flex items-center gap-2">
+                    <Package size={14} /> // Top Servicios
+                  </h3>
+                  <div className="space-y-5">
+                    {stats.serviciosMasVendidos.slice(0, 5).map((s, i) => {
+                      const catColors: Record<string, string> = {
+                        mecanica: 'bg-blue-500', desabolladura: 'bg-green-500',
+                        pintura: 'bg-purple-500', repuestos: 'bg-orange-500', otros: 'bg-neutral-500'
+                      };
+                      return (
+                        <div key={i} className="flex items-center gap-3">
+                          <span className="w-7 h-7 bg-neutral-900 border border-neutral-700 flex items-center justify-center font-black text-xs text-neutral-500 shrink-0">{i + 1}</span>
+                          <div className="flex-1">
+                            <div className="flex justify-between mb-1.5">
+                              <span className="text-xs font-bold text-white uppercase tracking-wider">{s.categoria}</span>
+                              <span className="text-xs font-mono font-bold text-red-400">{fmt(s.total)}</span>
+                            </div>
+                            <div className="h-1 bg-neutral-800 overflow-hidden">
+                              <motion.div initial={{ width: 0 }} animate={{ width: `${(s.total / (stats.serviciosMasVendidos[0]?.total || 1)) * 100}%` }}
+                                transition={{ duration: 1.2, delay: i * 0.1 }}
+                                className={`h-full ${catColors[s.categoria] || 'bg-neutral-500'}`} />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </GlassCard>
+
+                {/* Estados */}
+                <GlassCard className="p-6">
+                  <h3 className="text-[10px] font-black uppercase tracking-[0.3em] font-mono text-red-500 mb-6 flex items-center gap-2">
+                    <PieChart size={14} /> // Conversión
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {stats.estadoCotizaciones.map((e, i) => {
+                      const conf: Record<string, { color: string, border: string }> = {
+                        pendiente: { color: 'text-yellow-400', border: 'border-yellow-900/50' },
+                        aprobada: { color: 'text-emerald-400', border: 'border-emerald-900/50' },
+                        rechazada: { color: 'text-rose-500', border: 'border-rose-900/50' },
+                        en_proceso: { color: 'text-blue-400', border: 'border-blue-900/50' },
+                        completada: { color: 'text-purple-400', border: 'border-purple-900/50' },
+                      };
+                      const c = conf[e.estado] || { color: 'text-neutral-400', border: 'border-neutral-800' };
+                      return (
+                        <motion.div key={i} whileHover={{ y: -3 }}
+                          className={`p-4 bg-neutral-950/50 border ${c.border} flex flex-col items-center gap-1.5 transition-colors`}
+                          style={{ clipPath: 'polygon(6px 0, 100% 0, 100% calc(100% - 6px), calc(100% - 6px) 100%, 0 100%, 0 6px)' }}>
+                          <span className={`text-2xl font-black font-mono ${c.color}`}>{e.cantidad}</span>
+                          <span className="text-[8px] font-bold uppercase tracking-widest text-neutral-400 text-center">{e.estado.replace('_', ' ')}</span>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </GlassCard>
+              </div>
+            </motion.div>
+          )}
+
         </AnimatePresence>
       </div>
 
-      {/* MODALS */}
-      <Modal isOpen={modalDetalle.isOpen} onClose={() => setModalDetalle({ isOpen: false })} title="Detalle de Cotización" size="lg">
+      {/* MODAL DETALLE */}
+      <Modal isOpen={modalDetalle.isOpen} onClose={() => setModalDetalle({ isOpen: false })} title="Detalle Cotización" size="lg">
         {modalDetalle.cotizacion && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-6">
-              <div>
-                <p className="text-xs text-neutral-500 font-bold uppercase mb-1">Cliente</p>
-                <p className="text-lg font-bold text-white">{modalDetalle.cotizacion.cliente}</p>
-                <p className="text-sm text-neutral-400">{modalDetalle.cotizacion.rutCliente}</p>
-              </div>
-              <div>
-                <p className="text-xs text-neutral-500 font-bold uppercase mb-1">Vehículo</p>
-                <p className="text-lg font-bold text-white">{modalDetalle.cotizacion.vehiculo}</p>
-                <p className="text-sm text-neutral-400">{modalDetalle.cotizacion.patente}</p>
-              </div>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: 'Cliente', value: modalDetalle.cotizacion.cliente },
+                { label: 'RUT', value: modalDetalle.cotizacion.rutCliente },
+                { label: 'Vehículo', value: modalDetalle.cotizacion.vehiculo },
+                { label: 'Patente', value: modalDetalle.cotizacion.patente },
+                { label: 'Teléfono', value: modalDetalle.cotizacion.telefonoCliente || '-' },
+                { label: 'Fecha', value: modalDetalle.cotizacion.fecha },
+              ].map((f, i) => (
+                <div key={i} className="bg-neutral-900/50 border border-neutral-800 p-3">
+                  <p className="text-[8px] text-neutral-500 uppercase tracking-widest mb-1">{f.label}</p>
+                  <p className="text-white font-bold text-sm">{f.value}</p>
+                </div>
+              ))}
             </div>
-            <div className="border-t border-white/10 pt-4">
-              <p className="text-xs text-neutral-500 font-bold uppercase mb-3">Servicios</p>
-              <div className="space-y-2">
-                {modalDetalle.cotizacion.items.map((item, i) => (
-                  <div key={i} className="flex justify-between items-center bg-neutral-800/30 p-3 rounded-lg">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-white">{item.descripcion}</p>
-                      <p className="text-xs text-neutral-500">{item.cantidad}x {fmt(item.precio)}</p>
-                    </div>
-                    <p className="text-sm font-bold text-white">{fmt(item.precio * item.cantidad)}</p>
-                  </div>
-                ))}
-              </div>
+            <div className="border border-neutral-800 overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-neutral-900">
+                  <tr>
+                    {['Descripción', 'Cat.', 'Precio', 'Cant.', 'Total'].map((h, i) => (
+                      <th key={i} className="py-2 px-3 text-[9px] text-neutral-400 font-mono uppercase tracking-wider text-left">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-800">
+                  {modalDetalle.cotizacion.items.map((item, i) => (
+                    <tr key={i} className="bg-neutral-950/50">
+                      <td className="py-2 px-3 text-white text-xs">{item.descripcion}</td>
+                      <td className="py-2 px-3 text-neutral-400 text-xs">{item.categoria}</td>
+                      <td className="py-2 px-3 text-white text-xs font-mono">{fmt(item.precio)}</td>
+                      <td className="py-2 px-3 text-white text-xs text-center">{item.cantidad}</td>
+                      <td className="py-2 px-3 text-red-400 text-xs font-mono font-bold">{fmt(item.precio * item.cantidad)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-            <div className="border-t border-white/10 pt-4 flex justify-between">
-              <span className="text-lg font-bold text-white">TOTAL</span>
-              <span className="text-2xl font-black text-red-500">{fmt(modalDetalle.cotizacion.totalFinal)}</span>
+            <div className="flex justify-between items-center bg-neutral-900/50 border border-red-900/30 p-4">
+              <span className="text-xs text-neutral-400 font-mono uppercase tracking-widest">Total Final</span>
+              <span className="text-2xl font-black text-white font-mono">{fmt(modalDetalle.cotizacion.totalFinal)}</span>
             </div>
             <div className="flex gap-3">
-              <NeonButton onClick={() => { abrir(modalDetalle.cotizacion); setModalDetalle({ isOpen: false }); }} icon={Edit2} label="EDITAR" variant="primary" className="flex-1" />
-              <NeonButton onClick={() => modalDetalle.cotizacion?.id_firebase && eliminar(modalDetalle.cotizacion.id_firebase)} icon={Trash2} label="ELIMINAR" variant="danger" className="flex-1" />
+              <button onClick={() => { abrir(modalDetalle.cotizacion!); setModalDetalle({ isOpen: false }); }}
+                className="flex-1 py-3 bg-red-600 text-white font-black text-xs uppercase tracking-widest hover:bg-red-500 transition-colors flex items-center justify-center gap-2">
+                <Edit2 size={14} /> Editar
+              </button>
+              <button onClick={() => descargarPDFDesdeLista(modalDetalle.cotizacion!)}
+                className="flex-1 py-3 bg-emerald-600 text-white font-black text-xs uppercase tracking-widest hover:bg-emerald-500 transition-colors flex items-center justify-center gap-2">
+                <Download size={14} /> PDF
+              </button>
+              {modalDetalle.cotizacion.id_firebase && (
+                <button onClick={() => eliminar(modalDetalle.cotizacion!.id_firebase!)}
+                  className="py-3 px-4 bg-neutral-900 border border-rose-900/50 text-rose-500 hover:bg-rose-950 transition-colors">
+                  <Trash2 size={14} />
+                </button>
+              )}
             </div>
           </div>
         )}
       </Modal>
 
-      <Modal isOpen={modalFiltros} onClose={() => setModalFiltros(false)} title="Filtros Avanzados" size="md">
-        <div className="space-y-6">
-          <div>
-            <label className="text-xs text-neutral-400 font-bold uppercase mb-2 block">Estado</label>
-            <select value={filtroEstado} onChange={e => setFiltroEstado(e.target.value)} className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-sm text-white focus:border-red-500 focus:ring-0">
-              <option value="todos">Todos los estados</option>
-              <option value="pendiente">Pendiente</option>
-              <option value="aprobada">Aprobada</option>
-              <option value="en_proceso">En Proceso</option>
-              <option value="completada">Completada</option>
-              <option value="rechazada">Rechazada</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-neutral-400 font-bold uppercase mb-2 block">Período</label>
-            <select value={filtroFecha} onChange={e => setFiltroFecha(e.target.value)} className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-sm text-white focus:border-red-500 focus:ring-0">
-              <option value="todos">Todos los períodos</option>
-              <option value="hoy">Hoy</option>
-              <option value="semana">Última semana</option>
-              <option value="mes">Este mes</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-neutral-400 font-bold uppercase mb-2 block">Tipo de Vehículo</label>
-            <select value={filtroTipoVehiculo} onChange={e => setFiltroTipoVehiculo(e.target.value)} className="w-full bg-neutral-900 border border-neutral-700 rounded-lg px-4 py-3 text-sm text-white focus:border-red-500 focus:ring-0">
-              <option value="todos">Todos los tipos</option>
-              <option value="auto">Automóvil</option>
-              <option value="camioneta">Camioneta</option>
-              <option value="suv">SUV</option>
-              <option value="moto">Motocicleta</option>
-              <option value="camion">Camión</option>
-              <option value="otro">Otro</option>
-            </select>
-          </div>
-          <div className="flex gap-3 pt-4">
-            <NeonButton onClick={() => { setFiltroEstado('todos'); setFiltroFecha('todos'); setFiltroTipoVehiculo('todos'); setModalFiltros(false); }} label="LIMPIAR FILTROS" variant="secondary" className="flex-1" />
-            <NeonButton onClick={() => setModalFiltros(false)} label="APLICAR" variant="primary" className="flex-1" />
-          </div>
-        </div>
-      </Modal>
-
-      <Modal isOpen={modalExportar} onClose={() => setModalExportar(false)} title="Exportar Datos" size="md">
-        <div className="text-center py-8">
-          <Download size={48} className="text-neutral-600 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-white mb-2">Exportación de Datos</h3>
-          <p className="text-sm text-neutral-400 mb-6">Exporta todas tus cotizaciones y reportes</p>
-          <div className="grid grid-cols-2 gap-4">
-            <button onClick={exportarExcel} className="p-6 bg-green-600/20 border border-green-600/30 rounded-xl hover:bg-green-600/30 transition-colors">
-              <FileText size={32} className="text-green-500 mx-auto mb-2" />
-              <p className="text-sm font-bold text-white">Excel</p>
-              <p className="text-xs text-neutral-400 mt-1">Formato XLSX</p>
-            </button>
-            <button onClick={() => alert("PDF Export - Próximamente")} className="p-6 bg-red-600/20 border border-red-600/30 rounded-xl hover:bg-red-600/30 transition-colors">
-              <FileText size={32} className="text-red-500 mx-auto mb-2" />
-              <p className="text-sm font-bold text-white">PDF</p>
-              <p className="text-xs text-neutral-400 mt-1">Reporte completo</p>
-            </button>
-          </div>
-        </div>
-      </Modal>
-
-      <Modal isOpen={modalCliente.isOpen} onClose={() => setModalCliente({ isOpen: false })} title={modalCliente.cliente ? "Editar Cliente" : "Nuevo Cliente"} size="lg">
-        <div className="text-center py-12">
-          <Users size={64} className="text-neutral-600 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-white mb-2">Gestión de Clientes</h3>
-          <p className="text-neutral-400">Esta funcionalidad estará disponible próximamente</p>
+      {/* MODAL EXPORTAR */}
+      <Modal isOpen={modalExportar} onClose={() => setModalExportar(false)} title="Exportar Datos">
+        <div className="p-4 text-center">
+          <Download size={32} className="text-neutral-600 mx-auto mb-4" />
+          <p className="text-neutral-400 font-mono text-sm mb-6">Exportar registros a formato Excel.</p>
+          <NeonButton onClick={() => { alert("Módulo en desarrollo."); setModalExportar(false); }} icon={Download} label="Generar .XLSX" variant="success" />
         </div>
       </Modal>
 
       <style dangerouslySetInnerHTML={{
         __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=JetBrains+Mono:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #020202; }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
         input[type="number"] { -moz-appearance: textfield; }
-        @media print {
-            @page { margin: 0; size: letter; }
-            body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            .print\\:hidden { display: none !important; }
-            input, textarea, select { border: none !important; background: transparent !important; }
-        }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #0a0a0a; }
-        ::-webkit-scrollbar-thumb { background: #262626; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #404040; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #020202; }
+        ::-webkit-scrollbar-thumb { background: #dc2626; }
+        ::-webkit-scrollbar-thumb:hover { background: #ef4444; }
       `}} />
     </div>
   );
