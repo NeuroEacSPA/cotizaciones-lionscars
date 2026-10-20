@@ -17,10 +17,11 @@ import { initializeApp } from 'firebase/app';
 import {
   getFirestore, collection, addDoc, getDocs,
   doc, updateDoc, deleteDoc, query, orderBy,
-  Timestamp
+  Timestamp, getDoc, setDoc
 } from 'firebase/firestore';
 import {
-  getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+  getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut,
+  EmailAuthProvider, reauthenticateWithCredential, updatePassword
 } from 'firebase/auth';
 import type { User } from 'firebase/auth';
 
@@ -317,12 +318,108 @@ const LoginScreen = ({ onLogin }: { onLogin: () => void }) => {
   );
 };
 
+
+// --- CAMBIO DE CONTRASEÑA (primer ingreso) ---
+// Las cuentas se crean con una clave inicial compartida. La primera vez que
+// alguien entra se le ofrece cambiarla; la respuesta queda en usuarios/{uid}
+// (claveRevisada) para no volver a preguntar.
+const marcarClaveRevisada = (u: User, cambiada: boolean) =>
+  setDoc(doc(db, "usuarios", u.uid), { email: u.email, claveRevisada: true, claveCambiada: cambiada, fechaRevision: Timestamp.now() }, { merge: true });
+
+const CambiarClaveModal = ({ user, onClose }: { user: User; onClose: () => void }) => {
+  const [actual, setActual] = useState('');
+  const [nueva, setNueva] = useState('');
+  const [repetir, setRepetir] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [listo, setListo] = useState(false);
+
+  const ahoraNo = async () => {
+    try { await marcarClaveRevisada(user, false); } catch (err) { console.error(err); }
+    onClose();
+  };
+
+  const cambiar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    if (nueva.length < 10) return setError('La nueva contraseña debe tener al menos 10 caracteres.');
+    if (!/[a-zA-Z]/.test(nueva) || !/[0-9]/.test(nueva)) return setError('Usa letras y números.');
+    if (nueva !== repetir) return setError('Las contraseñas nuevas no coinciden.');
+    if (nueva === actual) return setError('La nueva contraseña tiene que ser distinta a la actual.');
+    setLoading(true);
+    try {
+      await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email || '', actual));
+      await updatePassword(user, nueva);
+      await marcarClaveRevisada(user, true);
+      setListo(true);
+      setTimeout(onClose, 1600);
+    } catch (err: any) {
+      const code = err?.code || '';
+      setError(code.includes('wrong-password') || code.includes('invalid-credential')
+        ? 'La contraseña actual no es correcta.'
+        : code.includes('too-many-requests') ? 'Demasiados intentos. Espera unos minutos.' : 'No se pudo cambiar la contraseña. Intenta de nuevo.');
+    }
+    setLoading(false);
+  };
+
+  const campo = (label: string, value: string, set: (v: string) => void, auto: string) => (
+    <div>
+      <label className="text-[9px] text-red-500/80 font-mono uppercase tracking-widest block mb-1">{label}</label>
+      <div className="flex items-center gap-2 bg-black/80 border border-neutral-800 p-3 focus-within:border-red-500 transition-all">
+        <Lock size={14} className="text-red-600/50 shrink-0" />
+        <input type="password" autoComplete={auto} className="bg-transparent w-full text-white text-sm font-mono tracking-wider outline-none" value={value} onChange={e => set(e.target.value)} required />
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-sm bg-[#0a0a0a] border border-red-900/50 p-6 sm:p-8 shadow-[0_0_50px_rgba(220,38,38,0.15)]">
+        {listo ? (
+          <div className="text-center py-6">
+            <CheckCircle2 className="text-green-500 mx-auto mb-3" size={40} />
+            <p className="text-white font-bold">Contraseña cambiada</p>
+            <p className="text-neutral-500 text-xs mt-1">La próxima vez entra con la nueva.</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 mb-2">
+              <Lock className="text-red-500" size={20} />
+              <h2 className="text-white font-black uppercase tracking-wide text-sm">¿Cambiar tu contraseña?</h2>
+            </div>
+            <p className="text-neutral-400 text-xs leading-relaxed mb-5">
+              Bienvenido{user.email ? `, ${user.email}` : ''}. Estás usando la contraseña inicial que comparten todas las cuentas. Te recomendamos cambiarla por una propia y más segura.
+            </p>
+            <form onSubmit={cambiar} className="space-y-3">
+              {campo('Contraseña actual', actual, setActual, 'current-password')}
+              {campo('Nueva contraseña (mín. 10, letras y números)', nueva, setNueva, 'new-password')}
+              {campo('Repetir nueva contraseña', repetir, setRepetir, 'new-password')}
+              {error && (
+                <div className="text-red-400 text-[11px] font-mono bg-red-950/30 p-3 border-l-2 border-red-500 flex items-center gap-2">
+                  <AlertCircle size={12} className="shrink-0" /> {error}
+                </div>
+              )}
+              <button type="submit" disabled={loading} className="w-full bg-red-600 hover:bg-red-500 text-white font-black py-3 text-xs uppercase tracking-[0.2em] disabled:opacity-50 flex justify-center items-center gap-2">
+                {loading ? <><Loader2 className="animate-spin" size={14} /> Guardando...</> : 'Cambiar contraseña'}
+              </button>
+              <button type="button" onClick={ahoraNo} disabled={loading} className="w-full text-neutral-500 hover:text-white text-xs py-2">
+                Ahora no, seguir con la actual
+              </button>
+            </form>
+          </>
+        )}
+      </motion.div>
+    </div>
+  );
+};
+
 // =============================================================================
 // MAIN APP
 // =============================================================================
 const App = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loadingAuth, setLoadingAuth] = useState(true);
+  const [pedirClave, setPedirClave] = useState(false);
   const [vista, setVista] = useState<'dashboard' | 'editor' | 'clientes' | 'analytics'>('dashboard');
   const [historial, setHistorial] = useState<CotizacionData[]>([]);
   const [clientes, setClientes] = useState<ClienteData[]>([]);
@@ -663,7 +760,12 @@ const descargarPDF = useCallback((datos?: CotizacionData) => {
     onAuthStateChanged(auth, u => {
       setUser(u);
       setLoadingAuth(false);
-      if (u) { cargarHistorial(); cargarClientes(); }
+      if (u) {
+        cargarHistorial(); cargarClientes();
+        getDoc(doc(db, "usuarios", u.uid))
+          .then(snap => setPedirClave(!snap.data()?.claveRevisada))
+          .catch(err => console.error(err));
+      } else setPedirClave(false);
     });
   }, [cargarHistorial, cargarClientes]);
 
@@ -815,6 +917,7 @@ const descargarPDF = useCallback((datos?: CotizacionData) => {
 
   return (
     <div className="min-h-screen bg-[#020202] text-neutral-200 selection:bg-red-500/30 overflow-x-hidden relative">
+      {pedirClave && <CambiarClaveModal user={user} onClose={() => setPedirClave(false)} />}
 
       {/* Background */}
       <div className="fixed inset-0 opacity-10 pointer-events-none z-0 bg-[linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] bg-[size:30px_30px]" />
